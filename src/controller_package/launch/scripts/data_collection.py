@@ -5,6 +5,7 @@ import roslib
 import sys
 import rospy
 import cv2
+import numpy as np
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
@@ -13,8 +14,9 @@ class data_collector:
     def __init__ (self):
         self.bridge = CvBridge()
         self.vel_sub = rospy.Subscriber("/R1/cmd_vel", Twist, self.twist_callback)
-        self.twist = Twist()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
+        self.vel_data = np.empty((0,2))
+        self.twist = Twist()
 
     def image_callback(self, data):
         try:
@@ -22,14 +24,13 @@ class data_collector:
         except CvBridgeError as e:  
             print(e)
 
+        
         cv2.imshow("Image window", cv_image)
         cv2.waitKey(3)
-        print(self.twist.linear.x)
-
-        # try:
-        #     self.cmd_pub.publish(move)
-        # except CvBridgeError as e:
-        #     print(e)
+        if len(self.vel_data) <= 300:
+            self.vel_data = np.append(self.vel_data, [[self.twist.angular.z, self.twist.linear.x]], axis=0)
+        else:
+            print("done")
     
     def twist_callback(self, data):
         self.twist = data
@@ -42,5 +43,8 @@ def main(args):
         rospy.spin()
     except KeyboardInterrupt:
         print("Shutting down")
+
+    np.savetxt('test.csv', dc.vel_data, delimiter=',')
+    cv2.destroyAllWindows()
 
 main(sys.argv)
