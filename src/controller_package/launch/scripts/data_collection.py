@@ -10,13 +10,24 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 
+VID_NAME = "/home/fizzer/ENPH353_Team16/src/data/video_data.mp4"
+VIDEO_SECS = 15
+FPS = 30
+SHAPE = (720,1280)
+
 class data_collector:
     def __init__ (self):
         self.bridge = CvBridge()
+
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.video_writer = cv2.VideoWriter(VID_NAME, fourcc, FPS, (SHAPE[1], SHAPE[0]))
+
         self.vel_sub = rospy.Subscriber("/R1/cmd_vel", Twist, self.twist_callback)
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
+
         self.vel_data = np.empty((0,2))
         self.twist = Twist()
+        self.released = False
 
     def image_callback(self, data):
         try:
@@ -24,13 +35,14 @@ class data_collector:
         except CvBridgeError as e:  
             print(e)
 
-        
-        cv2.imshow("Image window", cv_image)
-        cv2.waitKey(3)
-        if len(self.vel_data) <= 300:
+        if len(self.vel_data) < FPS*VIDEO_SECS:
+            self.video_writer.write(cv_image)
             self.vel_data = np.append(self.vel_data, [[self.twist.angular.z, self.twist.linear.x]], axis=0)
         else:
-            print("done")
+            if not self.released:
+                self.released = True
+                self.video_writer.release()
+
     
     def twist_callback(self, data):
         self.twist = data
