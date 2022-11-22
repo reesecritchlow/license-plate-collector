@@ -12,7 +12,6 @@ def main(args):
     tc = timer_controller.timer_controller(TEAM_ID)
     rospy.init_node('main_controller', anonymous=True)
     tc.start()
-    tc.terminate()
     try:
         rospy.spin()
     except KeyboardInterrupt:

@@ -14,6 +14,10 @@ ENDING_LOCATION = -1
 ENDING_PLATE = 'RT88'
 
 class timer_controller:
+    """
+    Class for interfacing with the timer and scoreboard interface for the enph353 competition.
+    """
+
     def __init__(self, teamID):
         load_dotenv()
         self.timer_pub = rospy.Publisher('/license_plate', String, queue_size=1)
@@ -22,16 +26,36 @@ class timer_controller:
         print('hello')
 
     def generate_message_string(self, location, plate):
-        return String(f'{self.teamID},{self.team_password},{location},{plate}')
-    
-    def start(self):
-        try:
-            self.timer_pub.publish(self.generate_message_string(STARTING_LOCATION, STARTING_PLATE))
-        except Exception as e: 
-            print(e)
+        """
+        Generates a message string.
 
-    def terminate(self):
-        self.timer_pub.publish(self.generate_message_string(ENDING_LOCATION, ENDING_PLATE))
+        Args:
+            location (string): plate location
+            plate (string): plate number/letters
+
+        Returns:
+            String: formatted string for interfacing with the controller
+        """
+        return String(f'{self.teamID},{self.team_password},{location},{plate}')
 
     def publish_plate(self, location, plate):
+        """
+        Publishes a plate to the 353 scoreboard.
+
+        Args:
+            location (number): plate location
+            plate (string): plate numbers/letters
+        """
         self.timer_pub.publish(self.generate_message_string(location, plate))
+    
+    def start(self):
+        """
+        Initializes the timer for enph353 competition.
+        """
+        self.publish_plate(STARTING_LOCATION, STARTING_PLATE)
+
+    def terminate(self):
+        """
+        Stops the timer and closes out the enph353 competition.
+        """
+        self.publish_plate(ENDING_LOCATION, ENDING_PLATE)
