@@ -15,10 +15,10 @@ def main(args):
     dc = direct_controller.direct_controller()
     rospy.init_node('main_controller', anonymous=True)
     tc.start()
-    dc.spin(-90)  
-    dc.drive(0.25, 1)  
     dc.spin(-90)
-    dc.drive(1, 1)
+    dc.drive(0.4, 0.3)  
+    dc.spin(90)
+    dc.drive(1, 0.3)
     tc.terminate()
     try:
         rospy.spin()

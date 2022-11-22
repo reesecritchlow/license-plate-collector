@@ -22,6 +22,7 @@ class direct_controller:
         time.sleep(np.abs(delay))
         movement.angular.z = 0
         self.movement_pub.publish(movement)
+        time.sleep(0.5)
         return
 
 
@@ -35,6 +36,6 @@ class direct_controller:
         time.sleep(np.abs(delay))
         movement.linear.x = 0
         self.movement_pub.publish(movement)
-        
+        time.sleep(0.5)
         return
    
