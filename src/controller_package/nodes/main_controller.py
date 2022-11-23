@@ -9,20 +9,20 @@ import cv2
 import time
 from pid_controller import pid_controller
 
-TEAM_ID = 'mode_push_16'
+
 
 def main(args):
-    tc = timer_controller.timer_controller(TEAM_ID)
+    # tc = timer_controller.timer_controller()
     dc = direct_controller.direct_controller()
-    # tc = timer_controller.timer_controller(TEAM_ID)
-    pid_c = pid_controller()
     rospy.init_node('main_controller', anonymous=True)
-    tc.start()
+
+    # tc.start()
     dc.spin(-90)
     dc.drive(0.4, 0.3)  
     dc.spin(90)
     dc.drive(1, 0.3)
-    tc.terminate()
+    pid_c = pid_controller()
+    # tc.terminate()
     try:
         rospy.spin()
     except KeyboardInterrupt:

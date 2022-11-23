@@ -12,18 +12,19 @@ STARTING_LOCATION = 0
 STARTING_PLATE = 'TR88'
 ENDING_LOCATION = -1
 ENDING_PLATE = 'RT88'
+TEAM_ID = 'mode_push_16'
 
 class timer_controller:
     """
     Class for interfacing with the timer and scoreboard interface for the enph353 competition.
     """
 
-    def __init__(self, teamID):
+    def __init__(self):
         load_dotenv()
         self.timer_pub = rospy.Publisher('/license_plate', String, queue_size=1)
-        self.teamID = teamID
+        self.teamID = TEAM_ID
         self.team_password = os.getenv('TEAM_PASSWORD')
-        print('hello')
+        # print('hello')
 
     def generate_message_string(self, location, plate):
         """
