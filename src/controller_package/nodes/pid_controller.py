@@ -24,14 +24,13 @@ TURN_RATIO = 10
 
 class pid_controller:
     
-    def __init__(self):
+    def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         self.timer_count = 0
         
-        self.timer_controller = timer_controller()
-        self.timer_controller.start()
+        self.timer = timer
 
     def process_image(self, image, rows, cols):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -83,7 +82,7 @@ class pid_controller:
             self.timer_count += 1
 
         if self.timer_count > TIMER_END:
-            self.timer_controller.terminate()
+            self.timer.terminate()
             rospy.signal_shutdown('pid lost line')
 
         cv2.imshow('img', cv_image)
