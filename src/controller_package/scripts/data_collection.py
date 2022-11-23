@@ -10,17 +10,21 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 
-VID_NAME = "/home/fizzer/ENPH353_Team16/src/data/video_data.mp4"
-VIDEO_SECS = 60
+VID_LOCATION = "/home/fizzer/data/"
+VIDEO_SECS = 120
 FPS = 20
+FRAME_CAPT_RATE = 3
 SHAPE = (720,1280)
 
 class data_collector:
-    def __init__ (self):
+    """
+    Class used to collect image data of the course and label each image with its respective command velocity.
+    """
+    def __init__ (self, data_name):
         self.bridge = CvBridge()
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.video_writer = cv2.VideoWriter(VID_NAME, fourcc, FPS, (SHAPE[1], SHAPE[0]))
+        self.video_writer = cv2.VideoWriter(f'{VID_LOCATION}{data_name}.mp4', fourcc, FPS, (SHAPE[1], SHAPE[0]))
         self.frame_count = 0
 
         self.vel_sub = rospy.Subscriber("/R1/cmd_vel", Twist, self.twist_callback)
@@ -38,7 +42,7 @@ class data_collector:
             print(e)
 
         if self.frame_count < FPS*VIDEO_SECS:
-            if self.frame_count % 3 == 0:
+            if self.frame_count % FRAME_CAPT_RATE == 0:
                 print(f"{self.frame_count}, {FPS*VIDEO_SECS}")
                 self.video_writer.write(cv_image)
                 self.vel_data = np.append(self.vel_data, [[self.twist.angular.z, self.twist.linear.x]], axis=0)
@@ -47,6 +51,9 @@ class data_collector:
                 self.released = True
                 print("done")
                 self.video_writer.release()
+            
+        cv2.imshow('pov',cv_image)
+        cv2.waitKey(3)
 
     
     def twist_callback(self, data):
@@ -54,14 +61,15 @@ class data_collector:
 
 
 def main(args):
-    dc = data_collector()
+    data_name = input("Data name (NO .mp4): ") 
+    dc = data_collector(data_name)
     rospy.init_node('data collection', anonymous=True)
     try:
         rospy.spin()
     except KeyboardInterrupt:
         print("Shutting down")
 
-    np.savetxt('/home/fizzer/ENPH353_Team16/src/data/data.csv', dc.vel_data, delimiter=',')
+    np.savetxt(f'/home/fizzer/data/{data_name}.csv', dc.vel_data, delimiter=',')
     cv2.destroyAllWindows()
 
 main(sys.argv)
