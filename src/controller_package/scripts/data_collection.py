@@ -12,8 +12,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 VID_LOCATION = "/home/fizzer/data/"
 VIDEO_SECS = 120
-FPS = 20
-FRAME_CAPT_RATE = 3
+FPS = 30
+FRAME_CAPT_RATE = 1
 SHAPE = (720,1280)
 
 class data_collector:
