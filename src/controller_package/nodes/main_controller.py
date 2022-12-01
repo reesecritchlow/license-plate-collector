@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
-import roslib
 import rospy
 import sys
 import timer_controller
 import direct_controller
 import cv2
-import time
-from pid_controller import pid_controller
-import timer_controller
 
+from imitation_controller import ImitationController
 
 
 def main(args):
@@ -19,16 +16,16 @@ def main(args):
 
     tc.start()
     dc.spin(-90)
-    dc.drive(0.4, 0.3)  
+    dc.drive(0.4, 0.3)
     dc.spin(90)
-    dc.drive(1, 0.3)
-    pid_c = pid_controller(tc)
-    # tc.terminate()
+    # dc.drive(1, 0.3)
+    ic = ImitationController(tc)
     try:
         rospy.spin()
     except KeyboardInterrupt:
         print('Shutting Down')
-    cv2.destroyAllWindows
+    cv2.destroyAllWindows()
+
 
 if __name__ == '__main__':
     main(sys.argv)
