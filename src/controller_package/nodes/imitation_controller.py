@@ -22,7 +22,7 @@ class ImitationController:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/reese_model_5.h5')
+        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/reese_model_6.h5')
 
     def image_callback(self, data):
         try:
