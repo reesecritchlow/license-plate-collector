@@ -16,7 +16,7 @@ sys.path.insert(0, '/home/rcritchlow/ros_ws/src/controller_package/nodes')
 from image_processing import process_image
 
 VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
-VIDEO_SECS = 13
+VIDEO_SECS = 120
 FPS = 30
 SHAPE = (108, 192)
 

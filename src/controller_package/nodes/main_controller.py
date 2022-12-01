@@ -19,7 +19,7 @@ def main(args):
     dc.drive(0.4, 0.3)
     dc.spin(90)
     # dc.drive(1, 0.3)
-    ic = ImitationController(tc)
+    # ic = ImitationController(tc)
     try:
         rospy.spin()
     except KeyboardInterrupt:
