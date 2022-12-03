@@ -61,12 +61,11 @@ class license_detector:
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
             print(approx)
-            # approx = self.corner_fix(approx)
-            # approx = np.array([[pt] for pt in approx])
-            # print(approx)
-            approx = approx.astype('float32')
-            matrix = cv2.getPerspectiveTransform(approx,PERSPECTIVE_OUT)
 
+            perspective_in = self.corner_fix(approx)
+            
+            print(perspective_in)
+            matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
 
             cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
             imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
@@ -132,7 +131,7 @@ class license_detector:
         #     if abs(tl[0, 1] - bl[0,1]) < tolerance and abs(br[0, 1] - bl[0,1]) > tolerance:
         #         return np.array([contour[1], contour[2], contour[3], contour[0]])            
         
-        return np.array([tl, bl, br, tr], dtype="float32")
+        return np.array([[tl, bl, br, tr]], dtype="float32")
 
     def process_image(self, image, rows, cols):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
