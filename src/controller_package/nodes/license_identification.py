@@ -48,48 +48,47 @@ class license_detector:
         processed_img = self.process_image(cv_image, rows, cols)
         cv_image =  cv_image[int(2/5*rows):int(4/5*rows), 0:cols]
        
-
         contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         c = max(contours, key = cv2.contourArea)
-        # print(f"AREA: {cv2.contourArea(c)}, type {type(c)}")
 
         matrix = None
 
         # if we see the front section on a car
         if len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA:
             cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
+
+            # find, and draw approximate polygon for contour c
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
-            print(approx)
-
             perspective_in = self.corner_fix(approx)
-            
-            print(perspective_in)
-            matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
-
             cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
+
+            # matrix transformation for perpective shift of license plate
+            matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
             imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
 
+            # cropping sections
             license_plate = imgOutput[350:435, 15:WIDTH-15]
+            numbers = (license_plate[:,10:70], license_plate[:,70:130], license_plate[:,190:250], license_plate[:,250:310])
             parking_spot = imgOutput[120:340, 15:WIDTH-15]
 
-            numbers = (license_plate[:,10:70], license_plate[:,70:130], license_plate[:,190:250], license_plate[:,250:310])
+            # displaying all 
             numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
-            
+            numbers_img_post = self.contour_format(numbers[0], blur_factor=2 , threshold_min=65)
+            parking_spot_post = self.contour_format(parking_spot)
             cv2.imshow('numbers', numbers_img)
-            cv2.imshow('spot', parking_spot) 
-            # cv2.imshow('plate', license_plate)
+            cv2.imshow('numbers_post', numbers_img_post)
+            cv2.imshow('spot', parking_spot_post)
 
         cv2.imshow('image', cv_image)
-        # cv2.imshow('blur',crop)
         cv2.waitKey(3)
         # This method should just get the image and call other functions
     
     def corner_fix(self, contour, tolerance = 10):
         
         """
-        Ensures that contour corners are located arranged properly. 
-        Top left, bottom left, bottom right, top right.
+        Orders contour points in contour clockwise direction, starting from the top left corner.
+        https://pyimagesearch.com/2016/03/21/ordering-coordinates-clockwise-with-python-and-opencv/ 
 
         @param contour must only have 4 values.
 
@@ -104,34 +103,27 @@ class license_detector:
         GOOD\n
         tl: [[238  78]], bl: [[239 203]], br: [[362 186]], tr: [[361  77]]
         """
-        # sort points based on largest x
-        # [[[937 77]], [[ 935  218]], [[1029  214]], [[1030   79]]]
-        # [[937 77], [ 935  218], [1029  214], [1030   79]]
         pts = np.array([pt[0] for pt in contour])
-        # print(pts)
+
         sort_x = pts[np.argsort(pts[:, 0]), :]
 
         leftMost = sort_x[:2, :]
         rightMost = sort_x[2:, :]
 
-        # print(f"left_most: {leftMost}, right_most:{rightMost}, sort_x: {sort_x}")
-
         leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
         (tl, bl) = leftMost
-        # now that we have the top-left coordinate, use it as an
-        # anchor to calculate the Euclidean distance between the
-        # top-left and right-most points; by the Pythagorean
-        # theorem, the point with the largest distance will be
-        # our bottom-right point
+        
         D = dist.cdist(tl[np.newaxis], rightMost, "euclidean")[0]
         (br, tr) = rightMost[np.argsort(D)[::-1], :]
 
-
-        # if abs(tl[0,0] - bl[0,0]) > tolerance and abs(tr[0,0] - br[0,0]) > tolerance:
-        #     if abs(tl[0, 1] - bl[0,1]) < tolerance and abs(br[0, 1] - bl[0,1]) > tolerance:
-        #         return np.array([contour[1], contour[2], contour[3], contour[0]])            
-        
         return np.array([[tl, bl, br, tr]], dtype="float32")
+
+    def contour_format(self, image, blur_factor = 5, threshold_min = 60, threshold_max = 255):
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blur = cv2.blur(grayscale,(blur_factor,blur_factor))
+        thresh = cv2.threshold(blur, threshold_min, threshold_max, cv2.THRESH_BINARY)[1]
+
+        return thresh
 
     def process_image(self, image, rows, cols):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
