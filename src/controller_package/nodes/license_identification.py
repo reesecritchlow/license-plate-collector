@@ -3,8 +3,10 @@
 import roslib
 # roslib.load_manifest('enph353_ros_lab')
 import sys
+from scipy.spatial import distance as dist 
 import rospy
 import cv2
+import imutils
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
@@ -49,7 +51,7 @@ class license_detector:
 
         contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         c = max(contours, key = cv2.contourArea)
-        print(f"AREA: {cv2.contourArea(c)}, type {type(c)}")
+        # print(f"AREA: {cv2.contourArea(c)}, type {type(c)}")
 
         matrix = None
 
@@ -58,12 +60,13 @@ class license_detector:
             cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
-
-            # print(approx)
+            print(approx)
             # approx = self.corner_fix(approx)
-            perspective_in = np.float32(approx) 
- 
-            matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
+            # approx = np.array([[pt] for pt in approx])
+            # print(approx)
+            approx = approx.astype('float32')
+            matrix = cv2.getPerspectiveTransform(approx,PERSPECTIVE_OUT)
+
 
             cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
             imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
@@ -102,12 +105,34 @@ class license_detector:
         GOOD\n
         tl: [[238  78]], bl: [[239 203]], br: [[362 186]], tr: [[361  77]]
         """
-        tl, bl, br, tr = (corner for corner in contour)
-        if abs(tl[0,0] - bl[0,0]) > tolerance and abs(tr[0,0] - br[0,0]) > tolerance:
-            if abs(tl[0, 1] - bl[0,1]) < tolerance and abs(br[0, 1] - bl[0,1]) > tolerance:
-                return np.array([contour[1], contour[2], contour[3], contour[0]])            
+        # sort points based on largest x
+        # [[[937 77]], [[ 935  218]], [[1029  214]], [[1030   79]]]
+        # [[937 77], [ 935  218], [1029  214], [1030   79]]
+        pts = np.array([pt[0] for pt in contour])
+        # print(pts)
+        sort_x = pts[np.argsort(pts[:, 0]), :]
+
+        leftMost = sort_x[:2, :]
+        rightMost = sort_x[2:, :]
+
+        # print(f"left_most: {leftMost}, right_most:{rightMost}, sort_x: {sort_x}")
+
+        leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
+        (tl, bl) = leftMost
+        # now that we have the top-left coordinate, use it as an
+        # anchor to calculate the Euclidean distance between the
+        # top-left and right-most points; by the Pythagorean
+        # theorem, the point with the largest distance will be
+        # our bottom-right point
+        D = dist.cdist(tl[np.newaxis], rightMost, "euclidean")[0]
+        (br, tr) = rightMost[np.argsort(D)[::-1], :]
+
+
+        # if abs(tl[0,0] - bl[0,0]) > tolerance and abs(tr[0,0] - br[0,0]) > tolerance:
+        #     if abs(tl[0, 1] - bl[0,1]) < tolerance and abs(br[0, 1] - bl[0,1]) > tolerance:
+        #         return np.array([contour[1], contour[2], contour[3], contour[0]])            
         
-        return np.array([tl, bl, br, tr])
+        return np.array([tl, bl, br, tr], dtype="float32")
 
     def process_image(self, image, rows, cols):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
