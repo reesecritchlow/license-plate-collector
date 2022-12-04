@@ -43,13 +43,13 @@ with open('sample.txt', 'wb') as f:
 
 class license_detector:
 
-    def __init__(self):
+    def __init__(self, plate_number, collect_data = False):
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         self.plate_save = False
-        self.plate_num = 0
-        with open(r"plate_save_number.pickle", "rb") as input_file:
-            self.plate_num = pickle.load(input_file)
+        self.plate_num = int(plate_number)
+        self.collect_data = False
+        
         
         
 
@@ -102,14 +102,15 @@ class license_detector:
             total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
             print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
 
-            if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
-                self.plate_save = True
-                cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
-                cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
-            else:
-                if self.plate_save:
-                    self.plate_save = False
-                    self.plate_num += 1
+            if self.collect_data:
+                if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
+                    self.plate_save = True
+                    cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
+                    cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
+                else:
+                    if self.plate_save:
+                        self.plate_save = False
+                        self.plate_num += 1
 
                 
             cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
