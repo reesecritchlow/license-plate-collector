@@ -3,6 +3,7 @@
 import roslib
 # roslib.load_manifest('enph353_ros_lab')
 import sys
+import os
 from scipy.spatial import distance as dist 
 import rospy
 import cv2
@@ -12,6 +13,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
+import time
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
 UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
@@ -28,11 +30,14 @@ HEIGHT = 500
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
 
+
+
 class license_detector:
 
     def __init__(self):
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
+        self.plate_save = False
         
 
     def image_callback(self, data):
@@ -54,6 +59,7 @@ class license_detector:
         matrix = None
 
         # if we see the front section on a car
+        print(f"front: {len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA}")
         if len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA:
             cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
 
@@ -74,11 +80,34 @@ class license_detector:
 
             # displaying all 
             numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
-            numbers_img_post = self.contour_format(numbers[0], blur_factor=2 , threshold_min=65)
+
+            numbers_img_post = self.contour_format(numbers_img)
+
+            number_cnt, _ = cv2.findContours(numbers_img_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
+            print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}")
+            if len(number_cnt) > 0 and 2000 < total_num_area < 9000:
+                # nums = sorted(number_cnt, key=cv2.contourArea, reverse=True)[0:6]
+                # print(nums)
+                # print(np.sum([cv2.contourArea(cnt) for cnt in number_cnt]))
+                if os.path.exists('/home/fizzer/data/images/plate.png') and not self.plate_save:
+                    self.plate_save = True
+                    cv2.imwrite(f"/home/fizzer/data/images/plate{int(time.time())}.png", license_plate)
+                    cv2.imwrite(f"/home/fizzer/data/images/parking{int(time.time())}.png", parking_spot)
+                else:
+                    cv2.imwrite(f"/home/fizzer/data/images/plate.png", license_plate)
+                    cv2.imwrite(f"/home/fizzer/data/images/parking.png", parking_spot)
+
+                cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
+            else:
+                self.plate_save = False
+                
+            
+
             parking_spot_post = self.contour_format(parking_spot)
             cv2.imshow('numbers', numbers_img)
-            cv2.imshow('numbers_post', numbers_img_post)
-            cv2.imshow('spot', parking_spot_post)
+            # cv2.imshow('numbers_post', numbers_img_post)
+            # cv2.imshow('spot', parking_spot_post)
 
         cv2.imshow('image', cv_image)
         cv2.waitKey(3)
@@ -118,10 +147,13 @@ class license_detector:
 
         return np.array([[tl, bl, br, tr]], dtype="float32")
 
-    def contour_format(self, image, blur_factor = 5, threshold_min = 60, threshold_max = 255):
-        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blur = cv2.blur(grayscale,(blur_factor,blur_factor))
-        thresh = cv2.threshold(blur, threshold_min, threshold_max, cv2.THRESH_BINARY)[1]
+    def contour_format(self, image, blur_factor = 9, threshold = 58, lower = np.array([0, 0, 0]), upper=np.array([144, 85, 255])):
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, lower, upper)
+        result = cv2.bitwise_and(image, image, mask=mask)
+        split = cv2.split(result)[2]
+        blur = cv2.blur(split,(blur_factor,blur_factor))
+        thresh = cv2.threshold(blur, threshold, 255, cv2.THRESH_BINARY_INV)[1]
 
         return thresh
 
