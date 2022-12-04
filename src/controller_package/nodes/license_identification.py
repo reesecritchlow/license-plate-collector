@@ -26,12 +26,12 @@ COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
 MIN_AREA = 9_000
 MAX_AREA = 30_000
-MIN_PLATE_AREA = 12_000
+MIN_PLATE_AREA = 10_000
 MAX_PLATE_AREA = 18_000
 
 
 WIDTH = 600
-HEIGHT = 1000
+HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
 
@@ -48,7 +48,7 @@ class license_detector:
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         self.plate_save = False
         self.plate_num = int(plate_number)
-        self.collect_data = False
+        self.collect_data = collect_data
         
         
         
@@ -100,7 +100,7 @@ class license_detector:
 
             number_cnt, _ = cv2.findContours(numbers_img_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-            print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
+            print(f"plate: {MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
 
             if self.collect_data:
                 if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
