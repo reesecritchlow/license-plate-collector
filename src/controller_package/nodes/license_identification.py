@@ -29,18 +29,16 @@ MAX_AREA = 30_000
 MIN_PLATE_AREA = 12_000
 MAX_PLATE_AREA = 18_000
 
-# WIDTH = 350
-# HEIGHT = 500
 
 WIDTH = 600
 HEIGHT = 1000
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
 
-# import pickle
-# d = {'a':0,'b':1,'c':2}
-# with open('sample.txt', 'wb') as f:
-#     pickle.dump(d,f)
+import pickle
+d = {'a':0,'b':1,'c':2}
+with open('sample.txt', 'wb') as f:
+    pickle.dump(d,f)
 
 
 class license_detector:
@@ -49,7 +47,10 @@ class license_detector:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         self.plate_save = False
-        # self.plate_num = 
+        self.plate_num = 0
+        with open(r"plate_save_number.pickle", "rb") as input_file:
+            self.plate_num = pickle.load(input_file)
+        
         
 
     def image_callback(self, data):
@@ -102,16 +103,13 @@ class license_detector:
             print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
 
             if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
-                if os.path.exists('/home/fizzer/data/images/plate.png') and not self.plate_save:
-                    cv2.imwrite(f"/home/fizzer/data/images/plate{int(time.time())}.png", plate_post)
-                    cv2.imwrite(f"/home/fizzer/data/images/parking{int(time.time())}.png", parking_spot)
-                else:
-                    cv2.imwrite(f"/home/fizzer/data/images/plate.png", plate_post)
-                    cv2.imwrite(f"/home/fizzer/data/images/parking.png", parking_spot)
-                #keep overwriting until we don't see it anymore
-                self.plate_save = False
-            # else:
-                
+                self.plate_save = True
+                cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
+                cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
+            else:
+                if self.plate_save:
+                    self.plate_save = False
+                    self.plate_num += 1
 
                 
             cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
