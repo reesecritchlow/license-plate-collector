@@ -14,6 +14,8 @@ from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import time
+import pickle
+
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
 UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
@@ -22,14 +24,23 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 9000
-MAX_AREA = 30000
+MIN_AREA = 9_000
+MAX_AREA = 30_000
+MIN_PLATE_AREA = 12_000
+MAX_PLATE_AREA = 18_000
 
-WIDTH = 350
-HEIGHT = 500
+# WIDTH = 350
+# HEIGHT = 500
+
+WIDTH = 600
+HEIGHT = 1000
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
 
+# import pickle
+# d = {'a':0,'b':1,'c':2}
+# with open('sample.txt', 'wb') as f:
+#     pickle.dump(d,f)
 
 
 class license_detector:
@@ -38,6 +49,7 @@ class license_detector:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         self.plate_save = False
+        # self.plate_num = 
         
 
     def image_callback(self, data):
@@ -72,42 +84,44 @@ class license_detector:
             # matrix transformation for perpective shift of license plate
             matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
             imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
-
+# WIDTH = 350
+# HEIGHT = 500
             # cropping sections
-            license_plate = imgOutput[350:435, 15:WIDTH-15]
-            numbers = (license_plate[:,10:70], license_plate[:,70:130], license_plate[:,190:250], license_plate[:,250:310])
-            parking_spot = imgOutput[120:340, 15:WIDTH-15]
+            license_plate = imgOutput[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
+            numbers = (license_plate[:,int(WIDTH*0.03):int(WIDTH*0.2)], license_plate[:,int(WIDTH*0.2):int(WIDTH*0.4)], license_plate[:,int(WIDTH*0.56):int(WIDTH*0.714)], license_plate[:,int(WIDTH*0.714):int(WIDTH*0.886)])
+            parking_spot = imgOutput[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
 
             # displaying all 
             numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
 
-            numbers_img_post = self.contour_format(numbers_img)
+            numbers_img_post = self.contour_format(numbers_img, threshold=30)
+            plate_post = self.contour_format(license_plate, threshold=30)
 
             number_cnt, _ = cv2.findContours(numbers_img_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-            print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}")
-            if len(number_cnt) > 0 and 2000 < total_num_area < 9000:
-                # nums = sorted(number_cnt, key=cv2.contourArea, reverse=True)[0:6]
-                # print(nums)
-                # print(np.sum([cv2.contourArea(cnt) for cnt in number_cnt]))
+            print(f"plate: {2000 < total_num_area < 9000 and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
+
+            if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
                 if os.path.exists('/home/fizzer/data/images/plate.png') and not self.plate_save:
-                    self.plate_save = True
-                    cv2.imwrite(f"/home/fizzer/data/images/plate{int(time.time())}.png", license_plate)
+                    cv2.imwrite(f"/home/fizzer/data/images/plate{int(time.time())}.png", plate_post)
                     cv2.imwrite(f"/home/fizzer/data/images/parking{int(time.time())}.png", parking_spot)
                 else:
-                    cv2.imwrite(f"/home/fizzer/data/images/plate.png", license_plate)
+                    cv2.imwrite(f"/home/fizzer/data/images/plate.png", plate_post)
                     cv2.imwrite(f"/home/fizzer/data/images/parking.png", parking_spot)
-
-                cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
-            else:
+                #keep overwriting until we don't see it anymore
                 self.plate_save = False
+            # else:
                 
+
+                
+            cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
             
 
             parking_spot_post = self.contour_format(parking_spot)
             cv2.imshow('numbers', numbers_img)
-            # cv2.imshow('numbers_post', numbers_img_post)
-            # cv2.imshow('spot', parking_spot_post)
+            cv2.imshow('numbers_POST', numbers_img_post)
+
+            cv2.imshow('spot', parking_spot_post)
 
         cv2.imshow('image', cv_image)
         cv2.waitKey(3)
