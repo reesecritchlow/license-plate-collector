@@ -24,10 +24,10 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 9_000
+MIN_AREA = 10_000
 MAX_AREA = 30_000
-MIN_PLATE_AREA = 10_000
-MAX_PLATE_AREA = 18_000
+MIN_PLATE_AREA = 8_000
+MAX_PLATE_AREA = 30_000
 
 
 WIDTH = 600
@@ -49,6 +49,7 @@ class license_detector:
         self.plate_save = False
         self.plate_num = int(plate_number)
         self.collect_data = collect_data
+        self.max_area = 0
         
         
         
@@ -59,7 +60,6 @@ class license_detector:
         except CvBridgeError as e:
             print(e)
 
-    
         rows = cv_image.shape[0]
         cols = cv_image.shape[1]
 
@@ -67,67 +67,71 @@ class license_detector:
         cv_image =  cv_image[int(2/5*rows):int(4/5*rows), 0:cols]
        
         contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        c = max(contours, key = cv2.contourArea)
-
+            
         matrix = None
 
         # if we see the front section on a car
-        print(f"front: {len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA}")
-        if len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA:
-            cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
-
-            # find, and draw approximate polygon for contour c
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
-            perspective_in = self.corner_fix(approx)
-            cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
-
-            # matrix transformation for perpective shift of license plate
-            matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
-            imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
-# WIDTH = 350
-# HEIGHT = 500
-            # cropping sections
-            license_plate = imgOutput[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
-            numbers = (license_plate[:,int(WIDTH*0.03):int(WIDTH*0.2)], license_plate[:,int(WIDTH*0.2):int(WIDTH*0.4)], license_plate[:,int(WIDTH*0.56):int(WIDTH*0.714)], license_plate[:,int(WIDTH*0.714):int(WIDTH*0.886)])
-            parking_spot = imgOutput[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
-
-            # displaying all 
-            numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
-
-            numbers_img_post = self.contour_format(numbers_img, threshold=30)
-            plate_post = self.contour_format(license_plate, threshold=30)
-
-            number_cnt, _ = cv2.findContours(numbers_img_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-            print(f"plate: {MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
-
-            if self.collect_data:
-                if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
-                    self.plate_save = True
-                    cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
-                    cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
-                else:
-                    if self.plate_save:
-                        self.plate_save = False
-                        self.plate_num += 1
-
+        # print(f"front: {len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA}")
+        if len(contours) > 0:
+            c = max(contours, key = cv2.contourArea)
+            if cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c):
+                cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
+                # find, and draw approximate polygon for contour c
+                peri = cv2.arcLength(c, True)
+                approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
                 
-            cv2.drawContours(numbers_img, number_cnt, -1, (0, 255, 0), 1)
-            
+                if cv2.contourArea(c) > self.max_area and len(approx) == 4:
+                    print("new max")
+                    self.max_area = cv2.contourArea(c)
 
-            parking_spot_post = self.contour_format(parking_spot)
-            cv2.imshow('numbers', numbers_img)
-            cv2.imshow('numbers_POST', numbers_img_post)
+                    perspective_in = self.corner_fix(approx)
+                    cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
 
-            cv2.imshow('spot', parking_spot_post)
+                    # matrix transformation for perpective shift of license plate
+                    matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
+                    imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
+
+                    # cropping sections
+                    license_plate = imgOutput[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
+                    numbers = (license_plate[:,int(WIDTH*0.03):int(WIDTH*0.2)], license_plate[:,int(WIDTH*0.2):int(WIDTH*0.4)], license_plate[:,int(WIDTH*0.56):int(WIDTH*0.714)], license_plate[:,int(WIDTH*0.714):int(WIDTH*0.886)])
+                    parking_spot = imgOutput[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
+
+                    # displaying all 
+                    # numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
+                    # numbers_img_post = self.contour_format(numbers_img, threshold=30)
+
+                    plate_post = self.contour_format(license_plate, threshold=30)
+
+                    number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
+                    print(f"plate: {MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
+                    if self.collect_data:
+                        if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
+                            print("SAVE")
+                            self.plate_save = True
+                            cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
+                            cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
+                            cv2.imshow('numbers_POST', plate_post)
+                        else:
+                            if self.plate_save:
+                                self.plate_save = False
+                                self.plate_num += 1
+
+                        
+                    cv2.drawContours(license_plate, number_cnt, -1, (0, 255, 0), 1)
+                    
+
+                    parking_spot_post = self.contour_format(parking_spot)
+
+                    cv2.imshow('spot', parking_spot_post)
+            else:
+                self.max_area = 0
 
         cv2.imshow('image', cv_image)
         cv2.waitKey(3)
         # This method should just get the image and call other functions
     
     def corner_fix(self, contour, tolerance = 10):
-        
         """
         Orders contour points in contour clockwise direction, starting from the top left corner.
         https://pyimagesearch.com/2016/03/21/ordering-coordinates-clockwise-with-python-and-opencv/ 
