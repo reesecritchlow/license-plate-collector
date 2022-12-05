@@ -100,7 +100,7 @@ class license_detector:
                     # numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
                     # numbers_img_post = self.contour_format(numbers_img, threshold=30)
 
-                    plate_post = self.contour_format(license_plate, threshold=30)
+                    plate_post = self.contour_format(license_plate)
 
                     number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                     total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
@@ -109,9 +109,11 @@ class license_detector:
                         if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
                             print("SAVE")
                             self.plate_save = True
-                            cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", plate_post)
+                            cv2.imwrite(f"/home/fizzer/data/images/plate_post{self.plate_num}.png", plate_post)
+                            cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", license_plate)
                             cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
                             cv2.imshow('numbers_POST', plate_post)
+                            cv2.imshow('numbers', license_plate)
                         else:
                             if self.plate_save:
                                 self.plate_save = False
@@ -123,7 +125,7 @@ class license_detector:
 
                     parking_spot_post = self.contour_format(parking_spot)
 
-                    cv2.imshow('spot', parking_spot_post)
+                    # cv2.imshow('spot', parking_spot_post)
             else:
                 self.max_area = 0
 
@@ -164,7 +166,7 @@ class license_detector:
 
         return np.array([[tl, bl, br, tr]], dtype="float32")
 
-    def contour_format(self, image, blur_factor = 9, threshold = 58, lower = np.array([0, 0, 0]), upper=np.array([144, 85, 255])):
+    def contour_format(self, image, blur_factor = 7, threshold = 10, lower = np.array([0, 0, 0]), upper=np.array([144, 85, 255])):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower, upper)
         result = cv2.bitwise_and(image, image, mask=mask)
