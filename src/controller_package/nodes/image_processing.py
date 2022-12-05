@@ -11,3 +11,25 @@ def process_image(image):
     new_dims = (192, 108)
     resized = cv2.resize(white_space, new_dims, interpolation=cv2.INTER_AREA)
     return resized
+
+
+def process_crosswalk(image):
+    lower_red = np.array([0, 0, 0])
+    upper_red = np.array([110, 255, 255])
+
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(hsv, lower_red, upper_red)
+
+    line_count = np.sum(mask[-1] != 255)
+
+    return line_count
+
+def process_pedestrian(initial, current):
+    gray_initial = cv2.cvtColor(initial, cv2.COLOR_BGR2GRAY)
+    gray_current = cv2.cvtColor(current, cv2.COLOR_BGR2GRAY)
+
+    difference = cv2.subtract(gray_initial, gray_current)
+
+    _, thresh = cv2.threshold(difference, 70, 255, cv2.THRESH_BINARY)
+
+    return thresh

@@ -17,7 +17,7 @@ from image_processing import process_image
 
 VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
 VIDEO_SECS = 120
-FPS = 30
+FPS = 5
 SHAPE = (108, 192)
 
 class data_collector:
