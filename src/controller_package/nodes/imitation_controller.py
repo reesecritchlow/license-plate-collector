@@ -14,7 +14,7 @@ import uuid
 
 import time
 
-from image_processing import process_image, process_crosswalk
+from image_processing import process_image, process_crosswalk, process_pedestrian
 
 LINEAR_SPEED = 1.743392200500000766e-01 * 1.5
 ANGULAR_SPEED = 9.000000000000000222e-01 * 1.5
@@ -40,12 +40,17 @@ class ImitationController:
 
         self.current_image = []
         self.image_stream = []
+        self.initial_crosswalk_image = []
 
         self.vel_data = np.empty((0,2))
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.data_name = uuid.uuid4()
         self.video_writer = cv2.VideoWriter(f'{VID_LOCATION}{self.data_name}.mp4', fourcc, FPS, (SHAPE[1], SHAPE[0]), 0)
+
+        self.pedestrian_scan = False
+        self.pscan_count = 0
+        self.scan_thresh = 3
     
     def twist_callback(self, data):
         self.twist = data
@@ -83,17 +88,34 @@ class ImitationController:
 
         movement = Twist()
 
-        # if self.crosswalk_turn_buffer <= 0:
-        #     crosswalk_score = process_crosswalk(cv_image)
-        #     if crosswalk_score >= 600:
-        #         movement.linear.x = 0
-        #         movement.angular.z = 0
-        #         self.vel_pub.publish(movement)
-        #         self.crosswalk_turn_buffer = 3
-        # else: 
-        #     crosswalk_score = 0
+        if self.crosswalk_turn_buffer <= 0:
+            crosswalk_score = process_crosswalk(cv_image)
+            if crosswalk_score >= 400:
+                movement.linear.x = 0
+                movement.angular.z = 0
+                self.vel_pub.publish(movement)
+                if self.pedestrian_scan == False:
+                    time.sleep(0.5)
+                    print('logged image')
+                    self.pedestrian_scan = True
+                    self.crosswalk_turn_buffer = 20
+                    self.initial_crosswalk_image = cv_image
+        else: 
+            crosswalk_score = 0
+        
+        if self.pedestrian_scan:
+            pedestrian_score = process_pedestrian(self.initial_crosswalk_image, cv_image)
+            if pedestrian_score > self.scan_thresh and pedestrian_score < 20:
+                self.pedestrian_scan = False
+                self.scan_thresh = 3
+            else: 
+                if self.pscan_count >= 100:
+                    self.scan_thresh = 1
+                    self.initial_crosswalk_image = cv_image
+                self.pscan_count += 1
+                return
 
-        # cv2.imshow('stream', processed_image)
+        # cv2.imshow('stream', crosswalk_score)
         # cv2.waitKey(3)
 
         if self.twist.linear.y != 0:
@@ -104,8 +126,8 @@ class ImitationController:
 
         movement.linear.x = LINEAR_SPEED
 
-        print(prediction)
-        print(i)
+        # print(prediction)
+        # print(i)
 
         if i == 0:
             movement.angular.z = 0
@@ -118,7 +140,7 @@ class ImitationController:
         else:
             movement.angular.z = 0
       
-        print(f'turn buffer: {self.crosswalk_turn_buffer}')
+        # print(f'turn buffer: {self.crosswalk_turn_buffer}')
 
         try:
             self.vel_pub.publish(movement)

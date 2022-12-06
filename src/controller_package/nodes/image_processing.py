@@ -2,6 +2,7 @@
 
 import cv2
 import numpy as np
+import uuid
 
 def process_image(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -32,4 +33,13 @@ def process_pedestrian(initial, current):
 
     _, thresh = cv2.threshold(difference, 70, 255, cv2.THRESH_BINARY)
 
-    return thresh
+    center = thresh[:, len(thresh[0]) // 2]
+
+    center_count = np.sum(center != 0)
+
+    print('center count', center_count)
+
+    cv2.imshow('pedestrian', thresh)
+    cv2.waitKey(3)
+
+    return center_count
