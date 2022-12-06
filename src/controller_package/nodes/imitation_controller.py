@@ -95,7 +95,6 @@ class ImitationController:
                 movement.angular.z = 0
                 self.vel_pub.publish(movement)
                 if self.pedestrian_scan == False:
-                    time.sleep(0.5)
                     print('logged image')
                     self.pedestrian_scan = True
                     self.crosswalk_turn_buffer = 20
@@ -107,16 +106,19 @@ class ImitationController:
             pedestrian_score = process_pedestrian(self.initial_crosswalk_image, cv_image)
             if pedestrian_score > self.scan_thresh and pedestrian_score < 20:
                 self.pedestrian_scan = False
-                self.scan_thresh = 3
+                self.scan_thresh = 10
+                self.pscan_count = 0
             else: 
-                if self.pscan_count >= 100:
+                if self.pscan_count >= 50:
+            
                     self.scan_thresh = 1
                     self.initial_crosswalk_image = cv_image
                 self.pscan_count += 1
+
                 return
 
-        # cv2.imshow('stream', crosswalk_score)
-        # cv2.waitKey(3)
+        cv2.imshow('stream', cv_image)
+        cv2.waitKey(3)
 
         if self.twist.linear.y != 0:
             return
