@@ -15,11 +15,12 @@ def main(args):
         chars_in_view = input("Plate characters (AB12): ")
         save_number = input("Save number (A0, B0, 10, 20)")
         frames = input("Number of frames: ")
-        ld = license_detector(char_collect, chars_in_view, int(save_number), int(frames))
+        light = input("Bright plate?(Y/N)")
+        in_light = True if light == 'Y' else False
+
+        ld = license_detector(char_collect, chars_in_view, int(save_number), int(frames), in_light)
     else:
         ld = license_detector()
-
-    
 
     try:
         rospy.spin()

@@ -29,26 +29,19 @@ MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
 
-
 WIDTH = 600
 HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
-
-import pickle
-d = {'a':0,'b':1,'c':2}
-with open('sample.txt', 'wb') as f:
-    pickle.dump(d,f)
-
-
 class license_detector:
 
-    def __init__(self, collect_data = False, chars_in_view="AAAA", save_number="0", max_frames=300):
+    def __init__(self, collect_data = False, chars_in_view="AAAA", save_number="0", max_frames=300, in_light=False):
         self.bridge = CvBridge()
         self.collect_data = collect_data
         self.chars_in_view = chars_in_view
         self.save_number = save_number
         self.max_frames = max_frames
+        self.in_light = in_light
         
         self.frame_counter = 0
         self.max_area = 0
@@ -196,15 +189,18 @@ class license_detector:
             front_perspective = self.get_front_perspective(cv_image, front_approx)
             license_plate, chars, combined_chars, parking_spot = self.get_plate(front_perspective)
 
-            for i, label in enumerate(self.chars_in_view):
-                cv2.imwrite(f"/home/fizzer/data/images/characters/{label}{self.save_number}.png", chars[i])
+            if not self.in_light:
+                for i, label in enumerate(self.chars_in_view):
+                    cv2.imwrite(f"/home/fizzer/data/images/characters/{label}{self.save_number}.png", chars[i])
+            else:
+                for i, label in enumerate(self.chars_in_view):
+                    cv2.imwrite(f"/home/fizzer/data/images/characters/light/{label}{self.save_number}.png", chars[i])
             
             self.save_number += 1
         else:
             print('DONE COLLECTING DATA')
             rospy.signal_shutdown('Finished collecting data.')
-            
-        
+                  
     def image_callback(self, data):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -240,7 +236,6 @@ class license_detector:
 
                 number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                 total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-                print(f"NUMBER AREA:{total_num_area}")
                 
                 if (len(number_cnt) > 0 
                     and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA  
@@ -268,5 +263,5 @@ class license_detector:
 
         cv2.imshow('image', cv_image)
         cv2.waitKey(3)
-        # This method should just get the image and call other functions
+
     
