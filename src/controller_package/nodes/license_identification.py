@@ -2,19 +2,18 @@
 
 import roslib
 # roslib.load_manifest('enph353_ros_lab')
-import sys
-import os
 from scipy.spatial import distance as dist 
 import rospy
 import cv2
-import imutils
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
-import time
-import pickle
+from tensorflow.keras import models
+from tensorflow import reshape
+import string
+
 
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
@@ -24,7 +23,7 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 10_000
+MIN_AREA = 25_000
 MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
@@ -46,11 +45,26 @@ class license_detector:
         self.frame_counter = 0
         self.max_area = 0
         self.plate_save = False
+
+        self.reverse_dic = self.reverse_dictionary()
         
         if(self.collect_data):
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.data_image_callback)
         else:
+            self.license_model = models.load_model('/home/fizzer/ENPH353_Team16/src/controller_package/models/license_model.h5')
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
+        
+    def reverse_dictionary(self):
+        # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        reverse_dic = {}
+
+        for i in range(26):
+            reverse_dic[i] = string.ascii_uppercase[i]
+
+        for i in range(10):
+            reverse_dic[i+26] = str(i)
+
+        return reverse_dic
 
     def corner_fix(self, contour, tolerance = 10):
         """
@@ -165,7 +179,10 @@ class license_detector:
 
         combined_chars = np.concatenate((chars[0], chars[1], chars[2], chars[3]), axis=1)
         return license_plate, chars, combined_chars, parking_spot
-        
+
+    def gray_scale(self, image):
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
     def data_image_callback(self, data):
         self.frame_counter += 1
         print(self.frame_counter)
@@ -191,10 +208,10 @@ class license_detector:
 
             if not self.in_light:
                 for i, label in enumerate(self.chars_in_view):
-                    cv2.imwrite(f"/home/fizzer/data/images/characters/{label}{self.save_number}.png", chars[i])
+                    cv2.imwrite(f"/home/fizzer/data/images/test/{label}{self.save_number}.png", chars[i])
             else:
                 for i, label in enumerate(self.chars_in_view):
-                    cv2.imwrite(f"/home/fizzer/data/images/characters/light/{label}{self.save_number}.png", chars[i])
+                    cv2.imwrite(f"/home/fizzer/data/images/test/light/{label}{self.save_number}.png", chars[i])
             
             self.save_number += 1
         else:
@@ -244,9 +261,20 @@ class license_detector:
                     and corner_coords[0] != 0
                     and corner_coords[1] != 0):
 
-                    if self.collect_data:
-                        print("SAVE")
-                        self.plate_save = True
+                    predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[0]), axis=0))[0]
+                    predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[1]), axis=0))[0]
+                    predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[2]), axis=0))[0]
+                    predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[3]), axis=0))[0]
+
+                    i0, = np.where(np.isclose(predict_0, 1.))
+                    i1, = np.where(np.isclose(predict_1, 1.))
+                    i2, = np.where(np.isclose(predict_2, 1.))
+                    i3, = np.where(np.isclose(predict_3, 1.))
+
+                    print(self.reverse_dic[0])
+                        
+                    print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+                    self.plate_save = True
                         # here we should try to read and publish the license plate number 
                         # along with the parking spot number
 
