@@ -11,6 +11,8 @@ from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 import sys
 
+import uuid
+
 sys.path.insert(0, '/home/rcritchlow/ros_ws/src/controller_package/nodes')
 
 from image_processing import process_image
@@ -65,9 +67,8 @@ class turn_injector:
 
         else:
             if not self.released:
-                for _ in range(10):
-                    movement.angular.z = -1 
-                    movement.linear.x = 1
+                for _ in range(20):
+                    movement.angular.z = -1 * ANGULAR_SPEED * 3
                     self.vel_pub.publish(movement)               
 
                 for _ in range(50):
@@ -80,7 +81,7 @@ class turn_injector:
                 print("released")
                 print(f'{self.twist.angular.z}, {self.twist.linear.x}')
 
-                rospy.signal_shutdown('swag')
+                # rospy.signal_shutdown('swag')
             
         cv2.imshow('pov', processed_image)
         cv2.waitKey(3)
@@ -90,8 +91,8 @@ class turn_injector:
 
 
 def main(args):
-    data_name = input("Data name (NO .mp4): ") 
-    rospy.init_node('inj', anonymous=True)
+    data_name = str(uuid.uuid4()).replace('-','').replace('_', '')
+    rospy.init_node(f'{data_name}')
     dc = turn_injector(data_name)
 
     try:
