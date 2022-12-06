@@ -11,12 +11,13 @@ def main(args):
     
     rospy.init_node('main_controller', anonymous=False)
     char_collect = input("Character collection? (Y/N) ")
+    ld = None
     if char_collect: 
         chars_in_view = input("Plate characters (AB12): ")
-        save_number = input("Save number (A1, B1, 11, 21)")
-        ld = license_detector(input("plate_number:"), collect_data=True)
+        save_number = input("Save number (A0, B0, 10, 20)")
+        ld = license_detector(char_collect, chars_in_view, save_number)
     else:
-        ld = license_detector(input("plate_number:"), collect_data=False)
+        ld = license_detector()
 
     
 
