@@ -58,186 +58,6 @@ class license_detector:
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.data_image_callback)
         else:
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
-            
-    def crop_camera(self, image):
-        rows = image.shape[0]
-        cols = image.shape[1]
-        image =  image[int(2/5*rows):int(4/5*rows), 0:cols]
-        return image
-
-    def get_front_approx(self, image, contours):
-        c = max(contours, key = cv2.contourArea)
-        
-        if (cv2.contourArea(c) < MAX_AREA 
-            and cv2.contourArea(c) > MIN_AREA 
-            and cv2.contourArea(c)):
-
-            cv2.drawContours(image, [c], 0, (0,0,255), 3)
-
-            # find, and draw approximate polygon for contour c
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
-
-            return approx
-        
-        return None
-
-    def get_front_perspective(self, image, approx_contours):
-        perspective_in = self.corner_fix(approx_contours)
-        cv2.drawContours(image, [approx_contours], 0, (0, 255, 0), 3)
-
-        # matrix transformation for perpective shift of license plate
-        matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
-        imgOutput = cv2.warpPerspective(image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
-        return imgOutput
-
-    def get_plate(self, image):
-        """gets license plate from perspective shifted front of car.
-
-        Args:
-            image (np.array): perspective shifted image of the front of a car
-
-        Returns:
-            license_plate: license plate image
-            chars: tuple of character images
-            combined_chars: combined image of characters
-            parking_spot: parking number
-        """
-        license_plate = image[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
-        start = 35
-        chars = ( license_plate[20:184,start:start+100], 
-                    license_plate[20:184,start+100:start+200], 
-                    license_plate[20:184,start+300:start+400], 
-                    license_plate[20:184,start+400:start+500])
-        parking_spot = image[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
-
-        combined_chars = np.concatenate((chars[0], chars[1], chars[2], chars[3]), axis=1)
-        return license_plate, chars, combined_chars, parking_spot
-        
-    def data_image_callback(self, data):
-        if self.frame_counter <= self.max_frames:
-            try:
-                cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            except CvBridgeError as e:
-                print(e)
-
-            processed_img = self.process_image(cv_image)
-            cv_image =  self.crop_camera(cv_image)
-
-            contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            
-            matrix = None
-            front_approx = None
-            if len(contours) > 0:
-                front_approx = self.get_front_approx(cv_image, contours)
-            
-            front_perspective = self.get_front_pers(cv_image, front_approx)
-            license_plate, chars, combined_chars, parking_spot = self.get_plate(front_perspective)
-
-            for i, label in enumerate(self.chars_in_view):
-                cv2.imwrite(f"/home/fizzer/data/images/characters/{label}{self.save_number}.png", chars[i])
-            
-            self.save_number += 1
-        else:
-            print('DONE COLLECTING DATA')
-            rospy.signal_shutdown('Finished collecting data.')
-            
-        
-       
-
-    def image_callback(self, data):
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-
-        processed_img = self.process_image(cv_image)
-        cv_image =  self.crop_camera(cv_image)
-       
-        contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            
-        matrix = None
-
-        # if we see the front section on a car
-        if len(contours) > 0:
-            c = max(contours, key = cv2.contourArea)
-            
-            if (cv2.contourArea(c) < MAX_AREA 
-                and cv2.contourArea(c) > MIN_AREA 
-                and cv2.contourArea(c)):
-
-                cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
-
-                # find, and draw approximate polygon for contour c
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
-                
-                if cv2.contourArea(c) > self.max_area and len(approx) == 4:
-                    # furthest_pt = max(np.where([])) 
-                    corner = max([(sum(pt[0]), i) for i, pt in enumerate(c)])
-                    corner_coords = np.array([c[corner[1]][0,1], c[corner[1]][0,0]])
-
-                    self.max_area = cv2.contourArea(c)
-
-                    perspective_in = self.corner_fix(approx)
-                    cv2.drawContours(cv_image, [approx], 0, (0, 255, 0), 3)
-
-                    # matrix transformation for perpective shift of license plate
-                    matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
-                    imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
-                    # end of front perspective
-
-                    # start of get license plate
-                    license_plate = imgOutput[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
-                    start = 35
-                    numbers = ( license_plate[20:184,start:start+100], 
-                                license_plate[20:184,start+100:start+200], 
-                                license_plate[20:184,start+300:start+400], 
-                                license_plate[20:184,start+400:start+500])
-                    parking_spot = imgOutput[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
-
-                    numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)  
-                    cv2.imshow("char", numbers_img)
-            
-                    plate_post = self.contour_format(license_plate)
-
-                    number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                    total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-                    print(f"NUMBER AREA:{total_num_area}")
-                    
-                    if (len(number_cnt) > 0 
-                        and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA  
-                        and corner_coords[0] != cv_image.shape[0]-1 
-                        and corner_coords[1] != cv_image.shape[1]-1):
-
-                        if self.collect_data:
-                            print("SAVE")
-                            self.plate_save = True
-                            cv2.imwrite(f"/home/fizzer/data/images/post/plate_post{self.plate_num}.png", plate_post)
-                            cv2.imwrite(f"/home/fizzer/data/images/plate/plate{self.plate_num}.png", license_plate)
-                            cv2.imwrite(f"/home/fizzer/data/images/parking/parking{self.plate_num}.png", parking_spot)
-                            
-                        # cv2.imshow('numbers_POST', plate_post)
-                        # cv2.imshow('numbers', license_plate)
-                    else:
-                        if self.plate_save:
-                            self.plate_save = False
-                            self.plate_num += 1
-
-                        
-                    cv2.drawContours(license_plate, number_cnt, -1, (0, 255, 0), 1)
-                    
-
-                    parking_spot_post = self.contour_format(parking_spot)
-
-                    # cv2.imshow('spot', parking_spot_post)
-            else:
-                self.max_area = 0
-
-        cv2.imshow('image', cv_image)
-        cv2.waitKey(3)
-        # This method should just get the image and call other functions
-
 
     def corner_fix(self, contour, tolerance = 10):
         """
@@ -298,4 +118,155 @@ class license_detector:
         crop = thresh[int(2/5*rows):int(4/5*rows), 0:cols]
         
         return crop
+
+    def crop_camera(self, image):
+        rows = image.shape[0]
+        cols = image.shape[1]
+        image =  image[int(2/5*rows):int(4/5*rows), 0:cols]
+        return image
+
+    def get_front_approx(self, image, contours):
+        c = max(contours, key = cv2.contourArea)
+        
+        if (cv2.contourArea(c) < MAX_AREA 
+            and cv2.contourArea(c) > MIN_AREA):
+
+            cv2.drawContours(image, [c], 0, (0,0,255), 3)
+
+            # find, and draw approximate polygon for contour c
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
+
+            return approx, c
+        
+        return [], []
+
+    def get_front_perspective(self, image, approx_contours):
+        perspective_in = self.corner_fix(approx_contours)
+        cv2.drawContours(image, [approx_contours], 0, (0, 255, 0), 3)
+
+        # matrix transformation for perpective shift of license plate
+        matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
+        imgOutput = cv2.warpPerspective(image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
+        return imgOutput
+
+    def get_plate(self, image):
+        """gets license plate from perspective shifted front of car.
+
+        Args:
+            image (np.array): perspective shifted image of the front of a car
+
+        Returns:
+            license_plate: license plate image
+            chars: tuple of character images
+            combined_chars: combined image of characters
+            parking_spot: parking number
+        """
+        license_plate = image[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
+        start = 35
+        chars = ( license_plate[20:184,start:start+100], 
+                    license_plate[20:184,start+100:start+200], 
+                    license_plate[20:184,start+300:start+400], 
+                    license_plate[20:184,start+400:start+500])
+        parking_spot = image[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
+
+        combined_chars = np.concatenate((chars[0], chars[1], chars[2], chars[3]), axis=1)
+        return license_plate, chars, combined_chars, parking_spot
+        
+    def data_image_callback(self, data):
+        self.frame_counter += 1
+        print(self.frame_counter)
+        if self.frame_counter <= self.max_frames:
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            except CvBridgeError as e:
+                print(e)
+
+            processed_img = self.process_image(cv_image)
+            cv_image =  self.crop_camera(cv_image)
+
+            contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            
+            matrix = None
+            front_approx = None
+
+            if len(contours) > 0:
+                front_approx, _ = self.get_front_approx(cv_image, contours)
+            
+            front_perspective = self.get_front_perspective(cv_image, front_approx)
+            license_plate, chars, combined_chars, parking_spot = self.get_plate(front_perspective)
+
+            for i, label in enumerate(self.chars_in_view):
+                cv2.imwrite(f"/home/fizzer/data/images/characters/{label}{self.save_number}.png", chars[i])
+            
+            self.save_number += 1
+        else:
+            print('DONE COLLECTING DATA')
+            rospy.signal_shutdown('Finished collecting data.')
+            
+        
+    def image_callback(self, data):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        processed_img = self.process_image(cv_image)
+        cv_image =  self.crop_camera(cv_image)
+       
+        contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            
+        matrix = None
+
+        # if we see the front section on a car
+        if len(contours) > 0:
+            approx, max_contour = self.get_front_approx(cv_image, contours)
+                
+            if len(approx) == 4 and cv2.contourArea(max_contour) > self.max_area:
+                corner = max([(sum(pt[0]), i) for i, pt in enumerate(max_contour)])
+                corner_coords = np.array([max_contour[corner[1]][0,1], 
+                                          max_contour[corner[1]][0,0]])
+
+                self.max_area = cv2.contourArea(max_contour)
+
+                front_transformed = self.get_front_perspective(cv_image, approx)
+                # end of front perspective
+
+                # start of get license plate
+                license_plate, chars, combined_chars, parking_spot = self.get_plate(front_transformed)
+                cv2.imshow("char", combined_chars)
+        
+                plate_post = self.contour_format(license_plate)
+
+                number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
+                print(f"NUMBER AREA:{total_num_area}")
+                
+                if (len(number_cnt) > 0 
+                    and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA  
+                    and corner_coords[0] != cv_image.shape[0]-1 
+                    and corner_coords[1] != cv_image.shape[1]-1
+                    and corner_coords[0] != 0
+                    and corner_coords[1] != 0):
+
+                    if self.collect_data:
+                        print("SAVE")
+                        self.plate_save = True
+                        # here we should try to read and publish the license plate number 
+                        # along with the parking spot number
+
+                        # cv2.imwrite(f"/home/fizzer/data/images/post/plate_post{self.plate_num}.png", plate_post)
+                        # cv2.imwrite(f"/home/fizzer/data/images/plate/plate{self.plate_num}.png", license_plate)
+                        # cv2.imwrite(f"/home/fizzer/data/images/parking/parking{self.plate_num}.png", parking_spot)
+                else:
+                    if self.plate_save:
+                        self.plate_save = False
+                        self.plate_num += 1
+
+            else:
+                self.max_area = 0
+
+        cv2.imshow('image', cv_image)
+        cv2.waitKey(3)
+        # This method should just get the image and call other functions
     

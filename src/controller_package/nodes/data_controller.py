@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import roslib
 import rospy
 import sys
@@ -7,7 +8,7 @@ from license_identification import license_detector
 
 
 def main(args):
-    rospy.init_node('main_controller', anonymous=False)
+    rospy.init_node('data_controller', anonymous=False)
     char_collect = input("Character collection? (Y/N) ")
     ld = None
     if char_collect == 'Y': 
