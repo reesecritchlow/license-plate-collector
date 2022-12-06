@@ -11,7 +11,7 @@ def main(args):
     # tc = timer_controller.timer_controller()
     # dc = direct_controller.direct_controller()
     rospy.init_node('main_controller', anonymous=True)
-    ld = license_detector(input("plate_number:"), collect_data=True)
+    ld = license_detector(input("plate_number:"), collect_data=False)
     # tc.start()
     # dc.spin(-90)
     # dc.drive(0.4, 0.3)  

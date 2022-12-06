@@ -1,9 +1,12 @@
+# adapted from https://blog.alexgordienko.com/renaming-photos-in-bulk-with-python/ 
+
 import os
 
 # Function to rename multiple photos
 def main():
     # ask user for some info about photos on run.
-    directory = str("/home/fizzer/data/images/")
+    image_dir = input("/home/fizzer/data/images/")
+    directory = str(f"/home/fizzer/data/images/{image_dir}")
 
     i = 0
     dirs = os.listdir(directory)

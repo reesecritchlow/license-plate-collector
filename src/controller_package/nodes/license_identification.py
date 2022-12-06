@@ -25,7 +25,7 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
 MIN_AREA = 10_000
-MAX_AREA = 30_000
+MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
 
@@ -74,14 +74,21 @@ class license_detector:
         # print(f"front: {len(contours) > 0 and cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA}")
         if len(contours) > 0:
             c = max(contours, key = cv2.contourArea)
-            if cv2.contourArea(c) < MAX_AREA and cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c):
+            
+            if (cv2.contourArea(c) < MAX_AREA 
+                and cv2.contourArea(c) > MIN_AREA 
+                and cv2.contourArea(c)):
+
                 cv2.drawContours(cv_image, [c], 0, (0,0,255), 3)
                 # find, and draw approximate polygon for contour c
                 peri = cv2.arcLength(c, True)
                 approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
                 
                 if cv2.contourArea(c) > self.max_area and len(approx) == 4:
-                    print("new max")
+                    # furthest_pt = max(np.where([])) 
+                    corner = max([(sum(pt[0]), i) for i, pt in enumerate(c)])
+                    corner_coords = np.array([c[corner[1]][0,1], c[corner[1]][0,0]])
+
                     self.max_area = cv2.contourArea(c)
 
                     perspective_in = self.corner_fix(approx)
@@ -104,20 +111,26 @@ class license_detector:
 
                     number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                     total_num_area = np.sum([cv2.contourArea(cnt) for cnt in number_cnt])
-                    print(f"plate: {MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA and len(number_cnt) > 0}, AREA:{total_num_area}, #CNT: {len(number_cnt)}")
-                    if self.collect_data:
-                        if len(number_cnt) > 0 and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA:
+                    print(f"NUMBER AREA:{total_num_area}")
+                    
+                    if (len(number_cnt) > 0 
+                        and MIN_PLATE_AREA < total_num_area < MAX_PLATE_AREA  
+                        and corner_coords[0] != cv_image.shape[0]-1 
+                        and corner_coords[1] != cv_image.shape[1]-1):
+
+                        if self.collect_data:
                             print("SAVE")
                             self.plate_save = True
-                            cv2.imwrite(f"/home/fizzer/data/images/plate_post{self.plate_num}.png", plate_post)
-                            cv2.imwrite(f"/home/fizzer/data/images/plate{self.plate_num}.png", license_plate)
-                            cv2.imwrite(f"/home/fizzer/data/images/parking{self.plate_num}.png", parking_spot)
-                            cv2.imshow('numbers_POST', plate_post)
-                            cv2.imshow('numbers', license_plate)
-                        else:
-                            if self.plate_save:
-                                self.plate_save = False
-                                self.plate_num += 1
+                            cv2.imwrite(f"/home/fizzer/data/images/post/plate_post{self.plate_num}.png", plate_post)
+                            cv2.imwrite(f"/home/fizzer/data/images/plate/plate{self.plate_num}.png", license_plate)
+                            cv2.imwrite(f"/home/fizzer/data/images/parking/parking{self.plate_num}.png", parking_spot)
+                            
+                        cv2.imshow('numbers_POST', plate_post)
+                        cv2.imshow('numbers', license_plate)
+                    else:
+                        if self.plate_save:
+                            self.plate_save = False
+                            self.plate_num += 1
 
                         
                     cv2.drawContours(license_plate, number_cnt, -1, (0, 255, 0), 1)
