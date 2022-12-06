@@ -8,17 +8,17 @@ from license_identification import license_detector
 
 
 def main(args):
-    # tc = timer_controller.timer_controller()
-    # dc = direct_controller.direct_controller()
-    rospy.init_node('main_controller', anonymous=True)
-    ld = license_detector(input("plate_number:"), collect_data=False)
-    # tc.start()
-    # dc.spin(-90)
-    # dc.drive(0.4, 0.3)  
-    # dc.spin(90)
-    # dc.drive(1, 0.3)
-    # pid_c = pid_controller(tc)
-    # tc.terminate()
+    
+    rospy.init_node('main_controller', anonymous=False)
+    char_collect = input("Character collection? (Y/N) ")
+    if char_collect: 
+        chars_in_view = input("Plate characters (AB12): ")
+        save_number = input("Save number (A1, B1, 11, 21)")
+        ld = license_detector(input("plate_number:"), collect_data=True)
+    else:
+        ld = license_detector(input("plate_number:"), collect_data=False)
+
+    
 
     try:
         rospy.spin()

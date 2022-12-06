@@ -84,7 +84,8 @@ class license_detector:
                 peri = cv2.arcLength(c, True)
                 approx = cv2.approxPolyDP(c, peri*0.05, True)[0:4]
                 
-                if cv2.contourArea(c) > self.max_area and len(approx) == 4:
+                # if cv2.contourArea(c) > self.max_area and len(approx) == 4:
+                if len(approx) == 4:
                     # furthest_pt = max(np.where([])) 
                     corner = max([(sum(pt[0]), i) for i, pt in enumerate(c)])
                     corner_coords = np.array([c[corner[1]][0,1], c[corner[1]][0,0]])
@@ -98,15 +99,18 @@ class license_detector:
                     matrix = cv2.getPerspectiveTransform(perspective_in,PERSPECTIVE_OUT)
                     imgOutput = cv2.warpPerspective(cv_image, matrix, (WIDTH,HEIGHT), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
 
-                    # cropping sections
+
                     license_plate = imgOutput[int(HEIGHT*0.7):int(HEIGHT*0.87), 15:WIDTH-15]
-                    numbers = (license_plate[:,int(WIDTH*0.03):int(WIDTH*0.2)], license_plate[:,int(WIDTH*0.2):int(WIDTH*0.4)], license_plate[:,int(WIDTH*0.56):int(WIDTH*0.714)], license_plate[:,int(WIDTH*0.714):int(WIDTH*0.886)])
+                    start = 35
+                    numbers = ( license_plate[20:184,start:start+100], 
+                                license_plate[20:184,start+100:start+200], 
+                                license_plate[20:184,start+300:start+400], 
+                                license_plate[20:184,start+400:start+500])
                     parking_spot = imgOutput[int(HEIGHT*0.24):int(HEIGHT*0.68), 15:WIDTH-15]
 
-                    # displaying all 
-                    # numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)
-                    # numbers_img_post = self.contour_format(numbers_img, threshold=30)
-
+                    numbers_img = np.concatenate((numbers[0], numbers[1], numbers[2], numbers[3]), axis=1)  
+                    cv2.imshow("char", numbers_img)
+            
                     plate_post = self.contour_format(license_plate)
 
                     number_cnt, _ = cv2.findContours(plate_post, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -125,8 +129,8 @@ class license_detector:
                             cv2.imwrite(f"/home/fizzer/data/images/plate/plate{self.plate_num}.png", license_plate)
                             cv2.imwrite(f"/home/fizzer/data/images/parking/parking{self.plate_num}.png", parking_spot)
                             
-                        cv2.imshow('numbers_POST', plate_post)
-                        cv2.imshow('numbers', license_plate)
+                        # cv2.imshow('numbers_POST', plate_post)
+                        # cv2.imshow('numbers', license_plate)
                     else:
                         if self.plate_save:
                             self.plate_save = False
