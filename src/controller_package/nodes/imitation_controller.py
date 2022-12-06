@@ -31,7 +31,7 @@ class ImitationController:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/rm5_modified_8.h5')
+        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/rm5_modified_10.h5')
         self.crosswalk_turn_buffer = 0
         self.vel_sub = rospy.Subscriber("/R1/cmd_vel", Twist, self.twist_callback)
 
@@ -117,8 +117,8 @@ class ImitationController:
 
                 return
 
-        cv2.imshow('stream', cv_image)
-        cv2.waitKey(3)
+        # cv2.imshow('stream', cv_image)
+        # cv2.waitKey(3)
 
         if self.twist.linear.y != 0:
             return
