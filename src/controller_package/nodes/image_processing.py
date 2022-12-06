@@ -39,7 +39,4 @@ def process_pedestrian(initial, current):
 
     print('center count', center_count)
 
-    cv2.imshow('pedestrian', thresh)
-    cv2.waitKey(3)
-
     return center_count
