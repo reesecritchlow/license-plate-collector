@@ -23,7 +23,7 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 23_000
+MIN_AREA = 10_000
 MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
@@ -45,6 +45,9 @@ class license_detector:
         self.frame_counter = 0
         self.max_area = 0
         self.plate_save = False
+
+        self.predicted = False
+        self.last_plate = None
 
         self.reverse_dic = self.reverse_dictionary()
         
@@ -249,7 +252,6 @@ class license_detector:
 
                 # start of get license plate
                 license_plate, chars, combined_chars, parking_spot = self.get_plate(front_transformed)
-                cv2.imshow("char", combined_chars)
         
                 plate_post = self.contour_format(license_plate)
 
@@ -262,34 +264,28 @@ class license_detector:
                     and corner_coords[1] != cv_image.shape[1]-1
                     and corner_coords[0] != 0
                     and corner_coords[1] != 0):
-
-                    predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[0]), axis=0))[0]
-                    predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[1]), axis=0))[0]
-                    predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[2]), axis=0))[0]
-                    predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(chars[3]), axis=0))[0]
-
-                    i0, = np.where(np.isclose(predict_0, 1.))
-                    i1, = np.where(np.isclose(predict_1, 1.))
-                    i2, = np.where(np.isclose(predict_2, 1.))
-                    i3, = np.where(np.isclose(predict_3, 1.))
-
-                    print(self.reverse_dic[0])
-                        
-                    print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+                    
+                    self.last_plate = chars
+                    self.predicted = False
                     self.plate_save = True
-                        # here we should try to read and publish the license plate number 
-                        # along with the parking spot number
-
-                        # cv2.imwrite(f"/home/fizzer/data/images/post/plate_post{self.plate_num}.png", plate_post)
-                        # cv2.imwrite(f"/home/fizzer/data/images/plate/plate{self.plate_num}.png", license_plate)
-                        # cv2.imwrite(f"/home/fizzer/data/images/parking/parking{self.plate_num}.png", parking_spot)
+                
                 else:
-                    if self.plate_save:
-                        self.plate_save = False
-                        self.plate_num += 1
+                    if not self.predicted:
+                        self.predicted = True
+                        predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[0]), axis=0))[0]
+                        predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[1]), axis=0))[0]
+                        predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[2]), axis=0))[0]
+                        predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[3]), axis=0))[0]
 
-            else:
+                        i0, = np.where(np.isclose(predict_0, 1.))
+                        i1, = np.where(np.isclose(predict_1, 1.))
+                        i2, = np.where(np.isclose(predict_2, 1.))
+                        i3, = np.where(np.isclose(predict_3, 1.))
+
+                        print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+            else: 
                 self.max_area = 0
+
 
         cv2.imshow('image', cv_image)
         cv2.waitKey(3)
