@@ -472,6 +472,7 @@ class OutsideController:
                                 print('state transition')
                                 self.inside = True
                                 self.drive_model = self.inside_model
+                                self.timer.terminate()
 
                             
             else:
