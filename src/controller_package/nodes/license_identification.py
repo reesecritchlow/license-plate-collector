@@ -18,7 +18,7 @@ import threading
 
 import uuid
 
-
+MAX_FRAMES = 1800
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
 UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
@@ -243,6 +243,13 @@ class license_detector:
         return
     
     def image_callback(self, data):
+        
+        self.frame_counter += 1
+        
+        if(self.frame_counter > MAX_FRAMES):
+            print('DONE')
+            rospy.signal_shutdown('Finished collecting data.')
+
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
