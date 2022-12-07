@@ -14,14 +14,24 @@ from tensorflow import reshape
 import numpy as np
 import uuid
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+FILE_PATH = os.getenv('COMP_DIRECTORY')
+
 from functions.image_processing import process_road, process_crosswalk, process_pedestrian
 
 LINEAR_SPEED = 1.743392200500000766e-01 * 1.5
 ANGULAR_SPEED = 9.000000000000000222e-01 * 1.5
 
-VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
+VID_LOCATION = f"/home/{FILE_PATH}/"
 SHAPE = (108, 192)
 FPS = 30
+
+
+
 
 class ImitationController:
     def __init__(self, timer):
@@ -29,7 +39,7 @@ class ImitationController:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/rm5_modified_10.h5')
+        self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
         self.crosswalk_turn_buffer = 0
         self.vel_sub = rospy.Subscriber("/R1/cmd_vel", Twist, self.twist_callback)
 
@@ -69,7 +79,7 @@ class ImitationController:
 
         if self.twist.linear.z != 0:
             self.video_writer.release()
-            np.savetxt(f'/home/rcritchlow/ENPH353_Team16_Data/{self.data_name}.csv', self.vel_data, delimiter=',')
+            np.savetxt(f'/home/{FILE_PATH}/{self.data_name}.csv', self.vel_data, delimiter=',')
             print('released')
 
         return

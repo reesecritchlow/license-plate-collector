@@ -58,7 +58,7 @@ class license_detector:
         if(self.collect_data):
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.data_image_callback)
         else:
-            self.license_model = models.load_model('/home/fizzer/ENPH353_Team16/src/controller_package/models/license_model.h5')
+            self.license_model = models.load_model(f'/home/{FILE_PATH}/ros_ws/src/controller_package/models/license_model.h5')
             self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw",Image,self.image_callback)
         
     def reverse_dictionary(self):
