@@ -21,7 +21,7 @@ sys.path.insert(0, '/src/controller_package/nodes')
 from functions.image_processing import process_road
 
 VID_LOCATION = f'/home/{FILE_PATH}'
-VIDEO_SECS = 120
+VIDEO_SECS = 30
 FPS = 30
 SHAPE = (108, 192)
 

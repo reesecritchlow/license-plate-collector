@@ -72,7 +72,7 @@ class OutsideController:
         self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
         self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model_v2.h5')
         self.parking_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/parking_model.h5')
-        self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_1.h5')
+        self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_3.h5')
 
         self.drive_model = self.av_model
         self.inside = False
@@ -331,6 +331,8 @@ class OutsideController:
                 n3 = '1'
             elif n3 == 'B':
                 n3 = '8'
+            elif n3 == 'R':
+                n3 = '8'
 
         if n4.isalpha():
             if n4 == 'S':
@@ -346,8 +348,14 @@ class OutsideController:
             f"PREDICT {l1}{l2}{n3}{n4}")
         print(f"PARKING PREDICT: {ip[0]+1}")
 
-        self.timer.publish_plate(self.plate_positions.popleft(), f'{l1}{l2}{n3}{n4}')
+
+
+        self.timer.publish_plate(f'{(ip[0]+1)[0]}', f'{l1}{l2}{n3}{n4}')
         print(f'{thread_name} finished executing.')
+
+        if str((ip[0]+1)[0]) == '1':
+            self.timer.terminate()
+        
         return
 
     def image_callback(self, data):
@@ -436,6 +444,7 @@ class OutsideController:
             else:
                 movement.angular.z = 0
         else:
+            print(prediction_state)
             if prediction_state == 0:
                 movement.linear.x = 0
                 movement.angular.z = 0
@@ -515,11 +524,11 @@ class OutsideController:
                         if self.plate_window_count < PLATE_THREAD_WINDOW:
                             print('thread added')
                             self.plate_thread = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
-                            if not self.inside and len(self.plate_positions) == 1:
-                                print('state transition')
-                                self.inside = True
-                                self.drive_model = self.inside_model
-                                self.timer.terminate()
+                            # if not self.inside and len(self.plate_positions) == 1:
+                            #     print('state transition')
+                            #     self.inside = True
+                            #     self.drive_model = self.inside_model
+                                
 
                             
             else:
@@ -535,3 +544,4 @@ class OutsideController:
         
 
         return
+2
