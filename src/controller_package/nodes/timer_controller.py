@@ -12,7 +12,7 @@ STARTING_LOCATION = 0
 STARTING_PLATE = 'TR88'
 ENDING_LOCATION = -1
 ENDING_PLATE = 'RT88'
-TEAM_ID = 'mode_push_16'
+TEAM_ID = 'mpush'
 
 class TimerController:
     """
@@ -21,7 +21,7 @@ class TimerController:
 
     def __init__(self):
         load_dotenv()
-        self.timer_pub = rospy.Publisher('/license_plate', String, queue_size=1)
+        self.timer_pub = rospy.Publisher('/license_plate', String)
         self.teamID = TEAM_ID
         self.team_password = os.getenv('TEAM_PASSWORD')
         # print('hello')
@@ -37,7 +37,7 @@ class TimerController:
         Returns:
             String: formatted string for interfacing with the controller
         """
-        return String(f'{self.teamID},{self.team_password},{location},{plate}')
+        return str(f'{self.teamID},{self.team_password},{location},{plate}')
 
     def publish_plate(self, location, plate):
         """

@@ -26,6 +26,7 @@ def process_crosswalk(image):
 
     return line_count
 
+CROSSWALK_BAND = 10
 
 def process_pedestrian(initial, current):
     gray_initial = cv2.cvtColor(initial, cv2.COLOR_BGR2GRAY)
@@ -34,12 +35,12 @@ def process_pedestrian(initial, current):
     difference = cv2.subtract(gray_initial, gray_current)
     _, thresh = cv2.threshold(difference, 70, 255, cv2.THRESH_BINARY)
 
-    center = thresh[:, range(len(thresh[0]) // 2 - 5, len(thresh[0]) // 2 + 5)]
+    center = thresh[:, range(len(thresh[0]) // 2 - CROSSWALK_BAND, len(thresh[0]) // 2 + CROSSWALK_BAND)]
     center_count = np.sum(center != 0)
 
     # cv2.imshow('image', thresh)
     # cv2.waitKey(3)
 
-    # print(center_count)
+    print(center_count)
 
     return center_count

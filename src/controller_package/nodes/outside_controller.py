@@ -23,7 +23,8 @@ from functions.image_processing import process_road, process_crosswalk, process_
 LINEAR_SPEED = 1.743392200500000766e-01 
 ANGULAR_SPEED = 9.000000000000000222e-01 
 
-ROAD_IMAGE_SHAPE = (108, 192)
+INSIDE_ANGULAR_SPEED = 1.265767756416901202e+00	
+INSIDE_LINEAR_SPEED = 2.952450000000000907e-01
 
 CROSSWALK_STOP_THRESH = 400
 CROSSWALK_TURN_BUFFER = 20  # number of turn actions to pass before looking for another crosswalk
@@ -33,7 +34,7 @@ SECOND_LOWER_PEDESTRIAN_THRESH = 1
 SECOND_UPPER_PEDESTRIAN_THRESH = 10000
 
 PEDESTRIAN_QUEUE_SIZE = 5
-QUEUE_DEVIANCE = 2 * 4
+QUEUE_DEVIANCE = 2 * 8
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
 UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
@@ -47,9 +48,13 @@ MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
 
+PLATE_THREAD_WINDOW = 60
+
 WIDTH = 600
 HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
+
+ROAD_IMAGE_SHAPE = (192, 108)
 
 import os
 from dotenv import load_dotenv
@@ -65,7 +70,11 @@ class OutsideController:
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
         self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
-        self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model_v2.h5')
+        self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model.h5')
+        self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_1.h5')
+
+        self.drive_model = self.av_model
+        self.inside = False
 
         self.current_road_image = []
         self.image_stream = []
@@ -91,7 +100,15 @@ class OutsideController:
         self.predicted = False
         self.last_plate = None
 
+        self.plate_window_count = 0
+        self.plate_window_open = False
+        self.allow_count = False
+        self.plate_thread = threading.Thread()
+
+        self.plate_positions = deque(['2', '3', '4', '5', '6', '1'])
+
         self.reverse_dic = self.reverse_dictionary()
+
 
     def reverse_dictionary(self):
         # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -273,8 +290,10 @@ class OutsideController:
 
         print(
             f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+        self.timer.publish_plate(self.plate_positions.popleft(), f'{self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}')
         print(f'{thread_name} finished executing.')
         return
+
     def image_callback(self, data):
 
         current_camera_image = np.empty(ROAD_IMAGE_SHAPE)
@@ -284,12 +303,7 @@ class OutsideController:
         except CvBridgeError as e:
             print(e)
 
-
-
-
         movement = Twist()
-
-
 
         road_image = process_road(current_camera_image)
         self.current_road_image = road_image
@@ -298,7 +312,7 @@ class OutsideController:
             pedestrian_score = process_pedestrian(self.first_crosswalk_image, current_camera_image)
 
             if len(self.pedestrian_queue) == PEDESTRIAN_QUEUE_SIZE:
-                # print('queue average:', sum(self.pedestrian_queue)/len(self.pedestrian_queue))
+                print('queue average:', sum(self.pedestrian_queue)/len(self.pedestrian_queue))
 
                 if sum(self.pedestrian_queue)/len(self.pedestrian_queue) - QUEUE_DEVIANCE >= pedestrian_score or pedestrian_score >= sum(self.pedestrian_queue)/len(self.pedestrian_queue) + QUEUE_DEVIANCE:
                     # print('escaped')
@@ -348,24 +362,45 @@ class OutsideController:
             #     self.pedestrian_scan_count += 1
             #     return
 
-        movement_prediction = self.av_model.predict(reshape(road_image, (1, 108, 192, 1)), verbose=0)[0]
+        movement_prediction = self.drive_model.predict(reshape(road_image, (1, 108, 192, 1)), verbose=0)[0]
         prediction_state = np.argmax(movement_prediction)
 
-        movement.linear.x = LINEAR_SPEED
+       
+        if not self.inside:
+            movement.linear.x = LINEAR_SPEED
+            if prediction_state == 0:
+                movement.angular.z = 0
+            elif prediction_state == 1:
+                movement.angular.z = ANGULAR_SPEED
+                self.crosswalk_turn_buffer -= 1
 
-        if prediction_state == 0:
-            movement.angular.z = 0
-
-        elif prediction_state == 1:
-            movement.angular.z = ANGULAR_SPEED
-            self.crosswalk_turn_buffer -= 1
-
-        elif prediction_state == 2:
-            movement.angular.z = -1 * ANGULAR_SPEED
-            self.crosswalk_turn_buffer -= 1
-
+            elif prediction_state == 2:
+                movement.angular.z = -1 * ANGULAR_SPEED
+                self.crosswalk_turn_buffer -= 1
+            else:
+                movement.angular.z = 0
         else:
-            movement.angular.z = 0
+            if prediction_state == 0:
+                movement.linear.x = 0
+                movement.angular.z = 0
+            elif prediction_state == 1:
+                movement.linear.x = 0
+                movement.angular.z = INSIDE_ANGULAR_SPEED
+            elif prediction_state == 2:
+                movement.linear.x = 0
+                movement.angular.z = -1 * INSIDE_ANGULAR_SPEED
+            elif prediction_state == 3:
+                movement.linear.x = INSIDE_LINEAR_SPEED
+                movement.angular.z = 0
+            elif prediction_state == 4:
+                movement.linear.x = INSIDE_LINEAR_SPEED
+                movement.angular.z = INSIDE_ANGULAR_SPEED
+            elif prediction_state == 5:
+                movement.linear.x = INSIDE_LINEAR_SPEED
+                movement.angular.z = -1 * INSIDE_ANGULAR_SPEED
+            else:
+                movement.linear.x = INSIDE_LINEAR_SPEED
+                movement.angular.z = 0
 
         try:
             self.vel_pub.publish(movement)
@@ -415,9 +450,29 @@ class OutsideController:
                 else:
                     if not self.predicted:
                         self.predicted = True
-                        t1 = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
-                        t1.start()
+
+                        if self.plate_window_count == 0:
+                            self.allow_count = True
+
+                        if self.plate_window_count < PLATE_THREAD_WINDOW:
+                            print('thread added')
+                            self.plate_thread = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
+                            if not self.inside and len(self.plate_positions) == 1:
+                                print('state transition')
+                                self.inside = True
+                                self.drive_model = self.inside_model
+
+                            
             else:
                 self.max_area = 0
+
+            if self.allow_count:
+                self.plate_window_count += 1
+
+            if self.plate_window_count >= PLATE_THREAD_WINDOW:
+                self.plate_thread.start()
+                self.plate_window_count = 0
+                self.allow_count = False
+        
 
         return
