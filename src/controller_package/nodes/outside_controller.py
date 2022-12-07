@@ -47,9 +47,13 @@ MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
 
+PLATE_THREAD_WINDOW = 60
+
 WIDTH = 600
 HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
+
+
 
 import os
 from dotenv import load_dotenv
@@ -91,7 +95,15 @@ class OutsideController:
         self.predicted = False
         self.last_plate = None
 
+        self.plate_window_count = 0
+        self.plate_window_open = False
+        self.allow_count = False
+        self.plate_thread = threading.Thread()
+
+        self.plate_positions = deque(['2', '3', '4', '5', '6', '1'])
+
         self.reverse_dic = self.reverse_dictionary()
+
 
     def reverse_dictionary(self):
         # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -273,8 +285,10 @@ class OutsideController:
 
         print(
             f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+        self.timer.publish_plate(self.plate_positions.popleft(), f'{self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}')
         print(f'{thread_name} finished executing.')
         return
+
     def image_callback(self, data):
 
         current_camera_image = np.empty(ROAD_IMAGE_SHAPE)
@@ -284,12 +298,7 @@ class OutsideController:
         except CvBridgeError as e:
             print(e)
 
-
-
-
         movement = Twist()
-
-
 
         road_image = process_road(current_camera_image)
         self.current_road_image = road_image
@@ -415,9 +424,25 @@ class OutsideController:
                 else:
                     if not self.predicted:
                         self.predicted = True
-                        t1 = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
-                        t1.start()
+
+                        if self.plate_window_count == 0:
+                            self.allow_count = True
+
+                        if self.plate_window_count < PLATE_THREAD_WINDOW:
+                            print('thread added')
+                            self.plate_thread = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
+
+                            
             else:
                 self.max_area = 0
+
+            if self.allow_count:
+                self.plate_window_count += 1
+
+            if self.plate_window_count >= PLATE_THREAD_WINDOW:
+                self.plate_thread.start()
+                self.plate_window_count = 0
+                self.allow_count = False
+        
 
         return
