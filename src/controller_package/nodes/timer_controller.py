@@ -14,7 +14,7 @@ ENDING_LOCATION = -1
 ENDING_PLATE = 'RT88'
 TEAM_ID = 'mode_push_16'
 
-class timer_controller:
+class TimerController:
     """
     Class for interfacing with the timer and scoreboard interface for the enph353 competition.
     """

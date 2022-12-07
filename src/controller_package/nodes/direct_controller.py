@@ -5,12 +5,13 @@ from geometry_msgs.msg import Twist
 import time
 import numpy as np
 
-BASE_ANGULAR_VELOCITY = np.pi / 4 # rad/sec
+BASE_ANGULAR_VELOCITY = np.pi / 4  # rad/sec
 
-class direct_controller:
+
+class DirectController:
     def __init__(self):
         self.movement_pub = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=1)
-    
+
     def spin(self, angle, scaling=1):
         movement = Twist()
         angle_radians = angle * np.pi / 180
@@ -25,7 +26,6 @@ class direct_controller:
         time.sleep(0.5)
         return
 
-
     def drive(self, distance, speed=0.5):
         movement = Twist()
         delay = distance / speed
@@ -38,4 +38,3 @@ class direct_controller:
         self.movement_pub.publish(movement)
         time.sleep(0.5)
         return
-   

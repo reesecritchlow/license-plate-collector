@@ -32,13 +32,14 @@ def process_pedestrian(initial, current):
     gray_current = cv2.cvtColor(current, cv2.COLOR_BGR2GRAY)
 
     difference = cv2.subtract(gray_initial, gray_current)
-
     _, thresh = cv2.threshold(difference, 70, 255, cv2.THRESH_BINARY)
 
-    center = thresh[:, len(thresh[0]) // 2]
-
+    center = thresh[:, range(len(thresh[0]) // 2 - 5, len(thresh[0]) // 2 + 5)]
     center_count = np.sum(center != 0)
 
-    print('center count', center_count)
+    cv2.imshow('image', thresh)
+    cv2.waitKey(3)
+
+    print(center_count)
 
     return center_count

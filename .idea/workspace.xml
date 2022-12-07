@@ -2,12 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0056497c-42b3-4cbd-8882-3b58640fd063" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/ros_ws.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ros_ws.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/image_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/functions/image_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/imitation_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/imitation_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller_package/scripts/data_collection.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/data_collection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/direct_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/direct_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/functions/image_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/functions/image_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/main_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/main_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/outside_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/outside_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/pid_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/pid_controller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller_package/nodes/timer_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller_package/nodes/timer_controller.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,6 +59,9 @@
       <workItem from="1670269642920" duration="80000" />
       <workItem from="1670357572380" duration="307000" />
       <workItem from="1670358106726" duration="2489000" />
+      <workItem from="1670372929127" duration="5038000" />
+      <workItem from="1670378976537" duration="399000" />
+      <workItem from="1670381472412" duration="37000" />
     </task>
     <servers />
   </component>
