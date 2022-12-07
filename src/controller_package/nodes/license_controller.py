@@ -13,15 +13,7 @@ from outside_controller import OutsideController
 
 def main(args):
     rospy.init_node('main_controller', anonymous=True)
-    tc = TimerController()
-    dc = DirectController()
-    # ld = license_detector()
-    
-    tc.start()
-    dc.spin(-90)
-    dc.drive(0.4, 0.3)
-    dc.spin(90)
-    oc = OutsideController(tc)
+    ld = license_detector()
     try:
         rospy.spin()
     except KeyboardInterrupt:

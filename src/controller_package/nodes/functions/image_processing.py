@@ -37,9 +37,9 @@ def process_pedestrian(initial, current):
     center = thresh[:, range(len(thresh[0]) // 2 - 5, len(thresh[0]) // 2 + 5)]
     center_count = np.sum(center != 0)
 
-    cv2.imshow('image', thresh)
-    cv2.waitKey(3)
+    # cv2.imshow('image', thresh)
+    # cv2.waitKey(3)
 
-    print(center_count)
+    # print(center_count)
 
     return center_count

@@ -14,6 +14,10 @@ from tensorflow.keras import models
 from tensorflow import reshape
 import string
 
+import threading
+
+import uuid
+
 
 
 LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
@@ -23,7 +27,7 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 10_000
+MIN_AREA = 8_000
 MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
@@ -222,7 +226,22 @@ class license_detector:
         else:
             print('DONE COLLECTING DATA')
             rospy.signal_shutdown('Finished collecting data.')
-                  
+
+    def predict(self, thread_name):
+        predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[0]), axis=0))[0]
+        predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[1]), axis=0))[0]
+        predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[2]), axis=0))[0]
+        predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[3]), axis=0))[0]
+
+        i0, = np.where(np.isclose(predict_0, 1.))
+        i1, = np.where(np.isclose(predict_1, 1.))
+        i2, = np.where(np.isclose(predict_2, 1.))
+        i3, = np.where(np.isclose(predict_3, 1.))
+
+        print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+        print(f'{thread_name} finished executing.')
+        return
+    
     def image_callback(self, data):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -272,17 +291,23 @@ class license_detector:
                 else:
                     if not self.predicted:
                         self.predicted = True
-                        predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[0]), axis=0))[0]
-                        predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[1]), axis=0))[0]
-                        predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[2]), axis=0))[0]
-                        predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[3]), axis=0))[0]
+                        t1 = threading.Thread(target=self.predict, args=(uuid.uuid4(),))
+                        t1.start()
 
-                        i0, = np.where(np.isclose(predict_0, 1.))
-                        i1, = np.where(np.isclose(predict_1, 1.))
-                        i2, = np.where(np.isclose(predict_2, 1.))
-                        i3, = np.where(np.isclose(predict_3, 1.))
+                        # predict_0 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[0]), axis=0))[0]
+                        # predict_1 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[1]), axis=0))[0]
+                        # predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[2]), axis=0))[0]
+                        # predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[3]), axis=0))[0]
 
-                        print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+                        # i0, = np.where(np.isclose(predict_0, 1.))
+                        # i1, = np.where(np.isclose(predict_1, 1.))
+                        # i2, = np.where(np.isclose(predict_2, 1.))
+                        # i3, = np.where(np.isclose(predict_3, 1.))
+
+                        # print(f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+                        
+                        
+                        
             else: 
                 self.max_area = 0
 

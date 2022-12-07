@@ -34,7 +34,7 @@ class OutsideController:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/rm5_modified_10.h5')
+        self.av_model = models.load_model('/home/fizzer/ENPH353_Team16/src/controller_package/nodes/rm5_modified_10.h5')
 
         self.current_road_image = []
         self.image_stream = []
@@ -63,10 +63,10 @@ class OutsideController:
             pedestrian_score = process_pedestrian(self.first_crosswalk_image, current_camera_image)
 
             if len(self.pedestrian_queue) == PEDESTRIAN_QUEUE_SIZE:
-                print('queue average:', sum(self.pedestrian_queue)/len(self.pedestrian_queue))
+                # print('queue average:', sum(self.pedestrian_queue)/len(self.pedestrian_queue))
 
                 if sum(self.pedestrian_queue)/len(self.pedestrian_queue) - QUEUE_DEVIANCE >= pedestrian_score or pedestrian_score >= sum(self.pedestrian_queue)/len(self.pedestrian_queue) + QUEUE_DEVIANCE:
-                    print('escaped')
+                    # print('escaped')
                     self.pedestrian_scan = False
                     self.pedestrian_scan_count = 0
                     self.pedestrian_queue.clear()
@@ -76,7 +76,7 @@ class OutsideController:
                         self.first_crosswalk_image = current_camera_image
                         self.pedestrian_scan_count = 0
                         self.pedestrian_queue.clear()
-                        print('reset ped image')
+                        # print('reset ped image')
                     self.pedestrian_scan_count += 1
                     return
             else:
