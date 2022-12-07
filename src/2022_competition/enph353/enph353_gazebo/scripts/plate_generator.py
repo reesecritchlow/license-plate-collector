@@ -16,10 +16,50 @@ texture_path = '../media/materials/textures/'
 
 with open(path + "plates.csv", 'w') as plates_file:
     csvwriter = csv.writer(plates_file)
+    
+    plate_alphas = [
+        "YZ",
+        "WX",
+        "QO",
+        "WX", # light
+        "YZ", # light
+        "ST",
+        "UV",
+        "OQ", # light
+        # "QR",
+        # "ST",
+        # "UV",
+        # "WX",
+        # "YZ",
+        # "AB",
+        # "CD",
+        # "EF",
+    ]
 
-    for i in range(0, 16):
+    plate_numbers = [
+        "09",
+        "34",
+        "65",
+        "56", # light
+        "84", # light
+        "31",
+        "24",
+        "10", # light
+        # "21",
+        # "90",
+        # "87",
+        # "65",
+        # "43",
+        # "87",
+        # "65",
+        # "43"
+    ]
+    
+
+    for i in range(0, 8):
 
         # Pick two random letters
+        # uncomment for random generation
         plate_alpha = ""
         for _ in range(0, 2):
             plate_alpha += (random.choice(string.ascii_uppercase))
@@ -27,6 +67,10 @@ with open(path + "plates.csv", 'w') as plates_file:
 
         # Pick two random numbers
         plate_num = "{:02d}".format(num)
+        
+        # comment out for random
+        # plate_alpha = plate_alphas[i]
+        # plate_num = plate_numbers[i]
 
         # Save plate to file
         csvwriter.writerow([plate_alpha+plate_num])

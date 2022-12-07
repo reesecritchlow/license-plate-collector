@@ -3,6 +3,8 @@
 import rospy
 import sys
 import cv2
+from license_identification import license_detector
+
 
 from timer_controller import TimerController
 from direct_controller import DirectController
@@ -10,10 +12,11 @@ from outside_controller import OutsideController
 
 
 def main(args):
+    rospy.init_node('main_controller', anonymous=True)
     tc = TimerController()
     dc = DirectController()
-    rospy.init_node('main_controller', anonymous=True)
-
+    ld = license_detector()
+    
     tc.start()
     dc.spin(-90)
     dc.drive(0.4, 0.3)
