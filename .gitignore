@@ -1,5 +1,6 @@
 /devel
 /build
 .env
-src/controller_package/scripts/util/images/
-src/CMakeLists.txt
+/src/CMakeLists.txt
+.catkin_workspace
+src/controller_package/scripts/util/images
