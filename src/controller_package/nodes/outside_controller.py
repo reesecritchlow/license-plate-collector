@@ -418,7 +418,6 @@ class OutsideController:
 
         processed_img = self.process_image(cv_image)
         cv_image = self.crop_camera(cv_image)
-
         contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         matrix = None
@@ -454,7 +453,7 @@ class OutsideController:
 
                     parking_shape = parking_spot.shape
 
-                    self.last_parking = self.contour_format(parking_spot)[:, int(parking_shape[1]/2):parking_shape[1]]
+                    self.last_parking = self.contour_format(parking_spot, blur_factor=20, threshold=80)[:, int(parking_shape[1]/2):parking_shape[1]]
                     self.last_plate = chars
                     self.predicted = False
                     self.plate_save = True
