@@ -2,3 +2,4 @@
 /build
 .env
 src/controller_package/scripts/util/images/
+src/CMakeLists.txt
