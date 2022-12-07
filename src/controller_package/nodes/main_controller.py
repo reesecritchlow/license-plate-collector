@@ -16,9 +16,9 @@ def main(args):
     tc = TimerController()
     dc = DirectController()
     # ld = license_detector()
-    
+    # dc.spin(-90)
+    dc.drive(0.01, 0.01)
     tc.start()
-    dc.spin(-90)
     dc.drive(0.4, 0.3)
     dc.spin(90)
     oc = OutsideController(tc)
