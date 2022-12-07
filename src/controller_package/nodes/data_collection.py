@@ -11,10 +11,10 @@ import sys
 
 sys.path.insert(0, '/src/controller_package/nodes')
 
-from src.controller_package.nodes.functions.image_processing import process_road
+from functions.image_processing import process_road
 
-VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
-VIDEO_SECS = 120
+VID_LOCATION = "/home/fizzer/data/videos/"
+VIDEO_SECS = 30
 FPS = 30
 SHAPE = (108, 192)
 
@@ -74,7 +74,7 @@ def main(args):
     except KeyboardInterrupt:
         print("Shutting down")
 
-    np.savetxt(f'/home/rcritchlow/ENPH353_Team16_Data/{data_name}.csv', dc.vel_data, delimiter=',')
+    np.savetxt(f'/home/fizzer/data/videos/{data_name}.csv', dc.vel_data, delimiter=',')
     cv2.destroyAllWindows()
 
 
