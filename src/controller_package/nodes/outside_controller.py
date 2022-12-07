@@ -70,7 +70,7 @@ class OutsideController:
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
         self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
-        self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model.h5')
+        self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model_v2.h5')
         self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_1.h5')
 
         self.drive_model = self.av_model

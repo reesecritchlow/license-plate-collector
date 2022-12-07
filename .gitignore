@@ -4,3 +4,4 @@
 /src/CMakeLists.txt
 .catkin_workspace
 src/controller_package/scripts/util/images
+*.pyc
