@@ -9,11 +9,18 @@ from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
 import sys
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+FILE_PATH = os.getenv('COMP_DIRECTORY')
+
 sys.path.insert(0, '/src/controller_package/nodes')
 
 from src.controller_package.nodes.functions.image_processing import process_road
 
-VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
+VID_LOCATION = f'/home/{FILE_PATH}'
 VIDEO_SECS = 120
 FPS = 30
 SHAPE = (108, 192)
@@ -74,7 +81,7 @@ def main(args):
     except KeyboardInterrupt:
         print("Shutting down")
 
-    np.savetxt(f'/home/rcritchlow/ENPH353_Team16_Data/{data_name}.csv', dc.vel_data, delimiter=',')
+    np.savetxt(f'/home/{FILE_PATH}/ENPH353_Team16_Data/{data_name}.csv', dc.vel_data, delimiter=',')
     cv2.destroyAllWindows()
 
 

@@ -13,11 +13,18 @@ import sys
 
 import uuid
 
-sys.path.insert(0, '/home/rcritchlow/ros_ws/src/controller_package/nodes')
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+FILE_PATH = os.getenv('COMP_DIRECTORY')
+
+sys.path.insert(0, f'/home/{FILE_PATH}/src/controller_package/nodes')
 
 from image_processing import process_image
 
-VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
+VID_LOCATION = f"/home/{FILE_PATH}/"
 VIDEO_SECS = 1
 FPS = 50
 SHAPE = (108, 192)
@@ -100,7 +107,7 @@ def main(args):
     except KeyboardInterrupt:
         print("Shutting down")
 
-    np.savetxt(f'/home/rcritchlow/ENPH353_Team16_Data/{data_name}.csv', dc.vel_data, delimiter=',')
+    np.savetxt(f'/home/{FILE_PATH}/ENPH353_Team16_Data/{data_name}.csv', dc.vel_data, delimiter=',')
     cv2.destroyAllWindows()
 
 main(sys.argv)

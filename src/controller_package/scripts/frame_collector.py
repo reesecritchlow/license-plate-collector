@@ -5,7 +5,14 @@ import rospy
 from sensor_msgs.msg import Image
 import sys
 
-sys.path.insert(0, '/home/rcritchlow/ros_ws/src/controller_package/nodes')
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+FILE_PATH = os.getenv('COMP_DIRECTORY')
+
+sys.path.insert(0, f'/home/{FILE_PATH}/src/controller_package/nodes')
 from image_processing import process_pedestrian
 
 class frame_collector:

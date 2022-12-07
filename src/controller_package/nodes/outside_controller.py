@@ -51,14 +51,21 @@ WIDTH = 600
 HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+FILE_PATH = os.getenv('COMP_DIRECTORY')
+
 class OutsideController:
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/nodes/rm5_modified_10.h5')
-        self.license_model = models.load_model('/home/rcritchlow/ros_ws/src/controller_package/models/license_model.h5')
+        self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
+        self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model.h5')
 
         self.current_road_image = []
         self.image_stream = []
