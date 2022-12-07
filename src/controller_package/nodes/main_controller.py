@@ -6,7 +6,7 @@ import timer_controller
 import direct_controller
 import cv2
 
-from imitation_controller import ImitationController
+from outside_controller import OutsideController
 
 
 def main(args):
@@ -19,7 +19,7 @@ def main(args):
     dc.drive(0.4, 0.3)
     dc.spin(90)
     # dc.drive(1, 0.3)
-    ic = ImitationController(tc)
+    oc = OutsideController(tc)
     try:
         rospy.spin()
     except KeyboardInterrupt:

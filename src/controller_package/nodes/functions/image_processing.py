@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 import uuid
 
-def process_image(image):
+
+def process_road(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_white = np.array([0, 0, 120])
     upper_white = np.array([195, 35, 255])
@@ -24,6 +25,7 @@ def process_crosswalk(image):
     line_count = np.sum(mask[-1] != 255)
 
     return line_count
+
 
 def process_pedestrian(initial, current):
     gray_initial = cv2.cvtColor(initial, cv2.COLOR_BGR2GRAY)

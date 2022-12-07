@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 
-import roslib
+"""
+deprecated.
+"""
+
 import rospy
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 from tensorflow.keras import models
-import os
 from tensorflow import reshape
 import numpy as np
 import uuid
 
-import time
-
-from image_processing import process_image, process_crosswalk, process_pedestrian
+from functions.image_processing import process_road, process_crosswalk, process_pedestrian
 
 LINEAR_SPEED = 1.743392200500000766e-01 * 1.5
 ANGULAR_SPEED = 9.000000000000000222e-01 * 1.5
 
 VID_LOCATION = "/home/rcritchlow/ENPH353_Team16_Data/"
-
 SHAPE = (108, 192)
-
 FPS = 30
 
 class ImitationController:
@@ -83,7 +81,7 @@ class ImitationController:
         except CvBridgeError as e:
             print(e)
 
-        processed_image = process_image(cv_image)
+        processed_image = process_road(cv_image)
         self.current_image = processed_image
 
         movement = Twist()
