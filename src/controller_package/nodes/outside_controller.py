@@ -295,11 +295,58 @@ class OutsideController:
 
         ip = np.where(np.isclose(parking_predict, 1.))
 
+        l1 = self.reverse_dic[i0[0]]
+        l2 = self.reverse_dic[i1[0]]
+        n3 = self.reverse_dic[i2[0]]
+        n4 = self.reverse_dic[i3[0]]
+
+        # s5 z2 i1 t1 b8
+
+        if l1.isnumeric():
+            if int(l1) == 5:
+                l1 = 'S'
+            elif int(l1) == 2:
+                l1 = 'Z'
+            elif int(l1) == 1:
+                l1 = 'I'
+            elif int(l1) == 8:
+                l1 = 'B'
+        
+        if l2.isnumeric():
+            if int(l2) == 5:
+                l2 = 'S'
+            elif int(l2) == 2:
+                l2 = 'Z'
+            elif int(l2) == 1:
+                l2 = 'I'
+            elif int(l2) == 8:
+                l2 = 'B'
+
+        if n3.isalpha():
+            if n3 == 'S':
+                n3 = '5'
+            elif n3 == 'Z':
+                n3 = '2'
+            elif n3 == 'I':
+                n3 = '1'
+            elif n3 == 'B':
+                n3 = '8'
+
+        if n4.isalpha():
+            if n4 == 'S':
+                n4 = '5'
+            elif n4 == 'Z':
+                n4 = '2'
+            elif n4 == 'I':
+                n4 = '1'
+            elif n4 == 'B':
+                n4 = '8'
+
         print(
-            f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+            f"PREDICT {l1}{l2}{n3}{n4}")
         print(f"PARKING PREDICT: {ip[0]+1}")
 
-        self.timer.publish_plate(self.plate_positions.popleft(), f'{self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}')
+        self.timer.publish_plate(self.plate_positions.popleft(), f'{l1}{l2}{n3}{n4}')
         print(f'{thread_name} finished executing.')
         return
 
