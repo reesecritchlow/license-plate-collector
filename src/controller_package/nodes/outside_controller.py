@@ -71,6 +71,7 @@ class OutsideController:
         self.timer = timer
         self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
         self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model_v2.h5')
+        self.parking_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/parking_model.h5')
         self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_1.h5')
 
         self.drive_model = self.av_model
@@ -99,6 +100,7 @@ class OutsideController:
 
         self.predicted = False
         self.last_plate = None
+        self.last_parking = None
 
         self.plate_window_count = 0
         self.plate_window_open = False
@@ -154,6 +156,7 @@ class OutsideController:
         (br, tr) = rightMost[np.argsort(D)[::-1], :]
 
         return np.array([[tl, bl, br, tr]], dtype="float32")
+
 
     def contour_format(self, image, blur_factor=7, threshold=10, lower=np.array([0, 0, 0]),
                        upper=np.array([144, 85, 255])):
@@ -283,13 +286,19 @@ class OutsideController:
         predict_2 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[2]), axis=0))[0]
         predict_3 = self.license_model.predict(np.expand_dims(self.gray_scale(self.last_plate[3]), axis=0))[0]
 
+        parking_predict = self.parking_model.predict(np.expand_dims(self.last_parking, axis=0))[0]
+
         i0, = np.where(np.isclose(predict_0, 1.))
         i1, = np.where(np.isclose(predict_1, 1.))
         i2, = np.where(np.isclose(predict_2, 1.))
         i3, = np.where(np.isclose(predict_3, 1.))
 
+        ip = np.where(np.isclose(parking_predict, 1.))
+
         print(
             f"PREDICT {self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}")
+        print(f"PARKING PREDICT: {ip[0]+1}")
+
         self.timer.publish_plate(self.plate_positions.popleft(), f'{self.reverse_dic[i0[0]]}{self.reverse_dic[i1[0]]}{self.reverse_dic[i2[0]]}{self.reverse_dic[i3[0]]}')
         print(f'{thread_name} finished executing.')
         return
@@ -443,6 +452,9 @@ class OutsideController:
                         and corner_coords[0] != 0
                         and corner_coords[1] != 0):
 
+                    parking_shape = parking_spot.shape
+
+                    self.last_parking = self.contour_format(parking_spot)[:, int(parking_shape[1]/2):[parking_shape][1]]
                     self.last_plate = chars
                     self.predicted = False
                     self.plate_save = True
