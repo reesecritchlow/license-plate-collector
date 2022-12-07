@@ -23,7 +23,7 @@ UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
 
 COL_CROP_RATIO = 5/8
 ROW_RATIO = 3/8
-MIN_AREA = 25_000
+MIN_AREA = 23_000
 MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
 MAX_PLATE_AREA = 30_000
@@ -208,7 +208,9 @@ class license_detector:
 
             if not self.in_light:
                 for i, label in enumerate(self.chars_in_view):
-                    cv2.imwrite(f"/home/fizzer/data/images/test/{label}{self.save_number}.png", chars[i])
+                    # cv2.imwrite(f"/home/fizzer/data/images/test/{label}{self.save_number}.png", chars[i])
+                    cv2.imwrite(f"/home/fizzer/data/images/parking/{label}{self.save_number}.png", parking_spot)
+                    
             else:
                 for i, label in enumerate(self.chars_in_view):
                     cv2.imwrite(f"/home/fizzer/data/images/test/light/{label}{self.save_number}.png", chars[i])
