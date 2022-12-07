@@ -454,7 +454,7 @@ class OutsideController:
 
                     parking_shape = parking_spot.shape
 
-                    self.last_parking = self.contour_format(parking_spot)[:, int(parking_shape[1]/2):[parking_shape][1]]
+                    self.last_parking = self.contour_format(parking_spot)[:, int(parking_shape[1]/2):parking_shape[1]]
                     self.last_plate = chars
                     self.predicted = False
                     self.plate_save = True
