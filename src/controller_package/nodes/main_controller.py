@@ -15,8 +15,6 @@ def main(args):
     rospy.init_node('main_controller', anonymous=True)
     tc = TimerController()
     dc = DirectController()
-    # ld = license_detector()
-    # dc.spin(-90)
     dc.drive(0.01, 0.01)
     tc.start()
     dc.drive(0.4, 0.3)

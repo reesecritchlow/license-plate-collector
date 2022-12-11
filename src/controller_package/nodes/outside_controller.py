@@ -20,10 +20,10 @@ import uuid
 
 from functions.image_processing import process_road, process_crosswalk, process_pedestrian
 
-LINEAR_SPEED = 1.743392200500000766e-01 
-ANGULAR_SPEED = 9.000000000000000222e-01 
+LINEAR_SPEED = 1.743392200500000766e-01
+ANGULAR_SPEED = 9.000000000000000222e-01
 
-INSIDE_ANGULAR_SPEED = 1.265767756416901202e+00	
+INSIDE_ANGULAR_SPEED = 1.265767756416901202e+00
 INSIDE_LINEAR_SPEED = 2.952450000000000907e-01
 
 CROSSWALK_STOP_THRESH = 400
@@ -36,13 +36,13 @@ SECOND_UPPER_PEDESTRIAN_THRESH = 10000
 PEDESTRIAN_QUEUE_SIZE = 5
 QUEUE_DEVIANCE = 2 * 8
 
-LOWER_WHITE = np.array([0,0,86], dtype=np.uint8)
-UPPER_WHITE = np.array([127,17,206], dtype=np.uint8)
+LOWER_WHITE = np.array([0, 0, 86], dtype=np.uint8)
+UPPER_WHITE = np.array([127, 17, 206], dtype=np.uint8)
 # LOWER_WHITE = np.array([96,0,70], dtype=np.uint8)
 # UPPER_WHITE = np.array([125,82,200], dtype=np.uint8)
 
-COL_CROP_RATIO = 5/8
-ROW_RATIO = 3/8
+COL_CROP_RATIO = 5 / 8
+ROW_RATIO = 3 / 8
 MIN_AREA = 8_000
 MAX_AREA = 28_000
 MIN_PLATE_AREA = 8_000
@@ -52,7 +52,7 @@ PLATE_THREAD_WINDOW = 60
 
 WIDTH = 600
 HEIGHT = 1200
-PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
+PERSPECTIVE_OUT = np.float32([[0, 0], [0, HEIGHT - 1], [WIDTH - 1, HEIGHT - 1], [WIDTH - 1, 0]])
 
 ROAD_IMAGE_SHAPE = (192, 108)
 
@@ -63,13 +63,14 @@ load_dotenv()
 
 FILE_PATH = os.getenv('COMP_DIRECTORY')
 
+
 class OutsideController:
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/R1/pi_camera/image_raw", Image, self.image_callback)
         self.timer = timer
-        self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/rm5_modified_10.h5')
+        self.av_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/rm5_modified_10.h5')
         self.license_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/license_model_v2.h5')
         self.parking_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/models/parking_model.h5')
         self.inside_model = models.load_model(f'/home/{FILE_PATH}/src/controller_package/nodes/inner_model_3.h5')
@@ -110,7 +111,6 @@ class OutsideController:
         self.plate_positions = deque(['2', '3', '4', '5', '6', '1'])
 
         self.reverse_dic = self.reverse_dictionary()
-
 
     def reverse_dictionary(self):
         # alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -157,7 +157,6 @@ class OutsideController:
 
         return np.array([[tl, bl, br, tr]], dtype="float32")
 
-
     def contour_format(self, image, blur_factor=7, threshold=10, lower=np.array([0, 0, 0]),
                        upper=np.array([144, 85, 255])):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -195,8 +194,7 @@ class OutsideController:
     def get_front_approx(self, image, contours):
         c = max(contours, key=cv2.contourArea)
 
-        if (cv2.contourArea(c) < MAX_AREA
-                and cv2.contourArea(c) > MIN_AREA):
+        if (MAX_AREA > cv2.contourArea(c) > MIN_AREA):
             cv2.drawContours(image, [c], 0, (0, 0, 255), 3)
 
             # find, and draw approximate polygon for contour c
@@ -311,7 +309,7 @@ class OutsideController:
                 l1 = 'I'
             elif int(l1) == 8:
                 l1 = 'B'
-        
+
         if l2.isnumeric():
             if int(l2) == 5:
                 l2 = 'S'
@@ -346,16 +344,14 @@ class OutsideController:
 
         print(
             f"PREDICT {l1}{l2}{n3}{n4}")
-        print(f"PARKING PREDICT: {ip[0]+1}")
+        print(f"PARKING PREDICT: {ip[0] + 1}")
 
-
-
-        self.timer.publish_plate(f'{(ip[0]+1)[0]}', f'{l1}{l2}{n3}{n4}')
+        self.timer.publish_plate(f'{(ip[0] + 1)[0]}', f'{l1}{l2}{n3}{n4}')
         print(f'{thread_name} finished executing.')
 
-        if str((ip[0]+1)[0]) == '1':
+        if str((ip[0] + 1)[0]) == '1':
             self.timer.terminate()
-        
+
         return
 
     def image_callback(self, data):
@@ -376,9 +372,11 @@ class OutsideController:
             pedestrian_score = process_pedestrian(self.first_crosswalk_image, current_camera_image)
 
             if len(self.pedestrian_queue) == PEDESTRIAN_QUEUE_SIZE:
-                print('queue average:', sum(self.pedestrian_queue)/len(self.pedestrian_queue))
+                print('queue average:', sum(self.pedestrian_queue) / len(self.pedestrian_queue))
 
-                if sum(self.pedestrian_queue)/len(self.pedestrian_queue) - QUEUE_DEVIANCE >= pedestrian_score or pedestrian_score >= sum(self.pedestrian_queue)/len(self.pedestrian_queue) + QUEUE_DEVIANCE:
+                if sum(self.pedestrian_queue) / len(
+                        self.pedestrian_queue) - QUEUE_DEVIANCE >= pedestrian_score or pedestrian_score >= sum(
+                    self.pedestrian_queue) / len(self.pedestrian_queue) + QUEUE_DEVIANCE:
                     # print('escaped')
                     self.pedestrian_scan = False
                     self.pedestrian_scan_count = 0
@@ -411,25 +409,9 @@ class OutsideController:
                     self.first_crosswalk_image = current_camera_image
                     return
 
-
-            # if self.lower_scan_thresh < pedestrian_score < self.upper_scan_thresh:
-            #     self.pedestrian_scan = False
-            #     self.lower_scan_thresh = 10
-            #     self.pedestrian_scan_count = 0
-            #
-            #     # TODO: implement rolling average check
-            # else:
-            #     if self.pedestrian_scan_count >= SECOND_PEDESTRIAN_COUNT_THRESH:
-            #         self.lower_scan_thresh = SECOND_LOWER_PEDESTRIAN_THRESH
-            #         self.upper_scan_thresh = SECOND_UPPER_PEDESTRIAN_THRESH
-            #         self.first_crosswalk_image = current_camera_image
-            #     self.pedestrian_scan_count += 1
-            #     return
-
         movement_prediction = self.drive_model.predict(reshape(road_image, (1, 108, 192, 1)), verbose=0)[0]
         prediction_state = np.argmax(movement_prediction)
 
-       
         if not self.inside:
             movement.linear.x = LINEAR_SPEED
             if prediction_state == 0:
@@ -509,7 +491,8 @@ class OutsideController:
 
                     parking_shape = parking_spot.shape
 
-                    self.last_parking = self.contour_format(parking_spot, blur_factor=20, threshold=80)[:, int(parking_shape[1]/2):parking_shape[1]]
+                    self.last_parking = self.contour_format(parking_spot, blur_factor=20, threshold=80)[:,
+                                        int(parking_shape[1] / 2):parking_shape[1]]
                     self.last_plate = chars
                     self.predicted = False
                     self.plate_save = True
@@ -528,9 +511,6 @@ class OutsideController:
                             #     print('state transition')
                             #     self.inside = True
                             #     self.drive_model = self.inside_model
-                                
-
-                            
             else:
                 self.max_area = 0
 
@@ -541,7 +521,5 @@ class OutsideController:
                 self.plate_thread.start()
                 self.plate_window_count = 0
                 self.allow_count = False
-        
 
         return
-2
