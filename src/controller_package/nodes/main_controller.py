@@ -8,18 +8,18 @@ from license_identification import license_detector
 
 from timer_controller import TimerController
 from direct_controller import DirectController
-from outside_controller import OutsideController
+from state_machine import StateMachine
 
 
 def main(args):
     rospy.init_node('main_controller', anonymous=True)
-    tc = TimerController()
+    timer = TimerController()
     dc = DirectController()
     dc.drive(0.01, 0.01)
     tc.start()
     dc.drive(0.4, 0.3)
     dc.spin(90)
-    oc = OutsideController(tc)
+    sm = StateMachine(timer)
     try:
         rospy.spin()
     except KeyboardInterrupt:

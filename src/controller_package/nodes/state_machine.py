@@ -64,7 +64,7 @@ load_dotenv()
 FILE_PATH = os.getenv('COMP_DIRECTORY')
 
 
-class OutsideController:
+class StateMachine:
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()
