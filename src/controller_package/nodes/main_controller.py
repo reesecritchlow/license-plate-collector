@@ -6,8 +6,8 @@ import cv2
 from license_identification import license_detector
 
 
-from timer_controller import TimerController
-from direct_controller import DirectController
+from utils.timer_controller import TimerController
+from utils.direct_controller import DirectController
 from state_machine import StateMachine
 
 
