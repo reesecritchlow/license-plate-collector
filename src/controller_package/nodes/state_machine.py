@@ -18,7 +18,7 @@ import threading
 
 import uuid
 
-from functions.image_processing import process_road, process_crosswalk, process_pedestrian
+from utils.image_processing import process_road, process_crosswalk, process_pedestrian
 
 LINEAR_SPEED = 1.743392200500000766e-01
 ANGULAR_SPEED = 9.000000000000000222e-01
