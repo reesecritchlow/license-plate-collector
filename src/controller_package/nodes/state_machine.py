@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+
+"""
+state_machine.py:
+
+Main state machine for robot control.
+"""
+
 import string
 
 from collections import deque
@@ -65,6 +72,11 @@ FILE_PATH = os.getenv('COMP_DIRECTORY')
 
 
 class StateMachine:
+    """_summary_
+    StateMachine: 
+
+    Creates a control system for the robot in the ENPH 353 competition.
+    """
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()

@@ -16,6 +16,11 @@ sys.path.insert(0, f'/home/{FILE_PATH}/src/controller_package/nodes')
 from image_processing import process_pedestrian
 
 class frame_collector:
+    """
+    (deprecated): frame_collector
+
+    Class responsible for collecting individual frames for further analysis in Colab.
+    """
     def __init__(self, filename):
         self.counter = 0
         self.filename = filename

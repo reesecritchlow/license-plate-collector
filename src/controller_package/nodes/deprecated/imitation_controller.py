@@ -34,6 +34,11 @@ FPS = 30
 
 
 class ImitationController:
+    """(Deprecated) ImitationController:
+
+    
+    Initial implementation of a state machine.
+    """
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()

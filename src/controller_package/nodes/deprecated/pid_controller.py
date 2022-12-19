@@ -23,7 +23,9 @@ X_VEL = 0.3
 TURN_RATIO = 10
 
 class pid_controller:
-    
+    """(Deprecated) pid_controller:
+    controller responsible for pid control of the robot.
+    """
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist)
         self.bridge = CvBridge()

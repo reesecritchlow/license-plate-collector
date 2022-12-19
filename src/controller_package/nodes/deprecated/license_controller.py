@@ -12,6 +12,11 @@ from outside_controller import OutsideController
 
 
 def main(args):
+    """(deprecated): function responsible for testing license plate recognition
+
+    Args:
+        args (_type_): system args
+    """
     rospy.init_node('main_controller', anonymous=True)
     ld = license_detector()
     try:

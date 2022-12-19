@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+"""_summary_
+Entry point for all robot-controlling code in this project.
+"""
 import rospy
 import sys
 import cv2

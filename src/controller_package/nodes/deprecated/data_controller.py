@@ -8,6 +8,11 @@ from license_identification import license_detector
 
 
 def main(args):
+    """(deprecated): data collection for license plates
+
+    Args:
+        args (_type_): system args
+    """
     rospy.init_node('data_controller', anonymous=False)
     char_collect = input("Character collection? (Y/N) ")
     ld = None

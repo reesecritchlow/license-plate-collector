@@ -37,6 +37,9 @@ HEIGHT = 1200
 PERSPECTIVE_OUT = np.float32([[0,0], [0,HEIGHT-1], [WIDTH-1,HEIGHT-1], [WIDTH-1,0]])
 
 class license_detector:
+    """(deprecated) licence_detector:
+    Class responsible for detecting license plates and related activities.
+    """
 
     def __init__(self, collect_data = False, chars_in_view="AAAA", save_number="0", max_frames=300, in_light=False):
         self.bridge = CvBridge()
