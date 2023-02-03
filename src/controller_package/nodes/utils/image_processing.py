@@ -132,6 +132,18 @@ def corner_fix(contour):
 
 def contour_format(image, blur_factor=7, threshold=10, lower=np.array([0, 0, 0]),
                    upper=np.array([144, 85, 255])):
+    """Applies threshold, blur, and grayscale to OpenCV image.
+
+    Args:
+        image (np.darray): image to be formatted
+        blur_factor (int, optional): blur kernel size. Defaults to 7.
+        threshold (int, optional): min threshold value . Defaults to 10.
+        lower (np.array, optional): lower mask bound. Defaults to np.array([0, 0, 0]).
+        upper (np.array, optional): upper mask bound. Defaults to np.array([144, 85, 255]).
+
+    Returns:
+        _type_: _description_
+    """
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, lower, upper)
     result = cv2.bitwise_and(image, image, mask=mask)
@@ -143,6 +155,14 @@ def contour_format(image, blur_factor=7, threshold=10, lower=np.array([0, 0, 0])
 
 
 def process_image(image):
+    """Processes image for license identification
+
+    Args:
+        image (np.darray): image to be processed
+
+    Returns:
+        np.darray: processed image
+    """
     rows = image.shape[0]
     cols = image.shape[1]
 
@@ -161,6 +181,14 @@ def process_image(image):
 
 
 def crop_camera(image):
+    """crops image
+
+    Args:
+        image (np.darray): image to be cropped
+
+    Returns:
+        np.darray: cropped image
+    """
     rows = image.shape[0]
     cols = image.shape[1]
     image = image[int(2 / 5 * rows):int(4 / 5 * rows), 0:cols]
@@ -168,6 +196,15 @@ def crop_camera(image):
 
 
 def get_front_approx(image, contours):
+    """Creates polygon contour to approximate the edges of a contour.
+
+    Args:
+        image (np.darray): image with contour
+        contours (np.darray): original contours seen on image
+
+    Returns:
+        tuple: the contour of the approximation, the largest contour in the original contours
+    """
     c = max(contours, key=cv2.contourArea)
 
     if MAX_AREA > cv2.contourArea(c) > MIN_AREA:
@@ -183,6 +220,15 @@ def get_front_approx(image, contours):
 
 
 def get_front_perspective(image, approx_contours):
+    """Transforms a polygon to a rectangle, perspective shifts the image inside the polygon such that it is orthogonal to the screen. 
+
+    Args:
+        image (np.darray): image with license plate contour
+        approx_contours (np.darray): approximate polygon contour
+
+    Returns:
+        np.darray: Perspective shifted image
+    """
     perspective_in = corner_fix(approx_contours)
     cv2.drawContours(image, [approx_contours], 0, (0, 255, 0), 3)
 
