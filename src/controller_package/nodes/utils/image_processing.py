@@ -2,6 +2,8 @@
 
 import cv2
 import numpy as np
+import string
+from scipy.spatial import distance as dist
 
 LOWER_WHITE = np.array([0, 0, 86], dtype=np.uint8)
 UPPER_WHITE = np.array([127, 17, 206], dtype=np.uint8)
@@ -14,6 +16,7 @@ PERSPECTIVE_OUT = np.float32([[0, 0], [0, HEIGHT - 1], [WIDTH - 1, HEIGHT - 1], 
 """
 Set of helper functions for processing images for various points in the course.
 """
+
 
 def process_road(image):
     """
@@ -55,7 +58,9 @@ def process_crosswalk(image):
 
     return line_count
 
+
 CROSSWALK_BAND = 10
+
 
 def process_pedestrian(initial, current):
     """process_pedestrian
@@ -76,11 +81,6 @@ def process_pedestrian(initial, current):
     center = thresh[:, range(len(thresh[0]) // 2 - CROSSWALK_BAND, len(thresh[0]) // 2 + CROSSWALK_BAND)]
     center_count = np.sum(center != 0)
 
-    # cv2.imshow('image', thresh)
-    # cv2.waitKey(3)
-
-    print(center_count)
-
     return center_count
 
 
@@ -96,7 +96,7 @@ def reverse_dictionary():
     return reverse_dic
 
 
-def corner_fix(contour, tolerance=10):
+def corner_fix(contour):
     """
     Orders contour points in contour clockwise direction, starting from the top left corner.
     https://pyimagesearch.com/2016/03/21/ordering-coordinates-clockwise-with-python-and-opencv/
@@ -170,7 +170,7 @@ def crop_camera(image):
 def get_front_approx(image, contours):
     c = max(contours, key=cv2.contourArea)
 
-    if (MAX_AREA > cv2.contourArea(c) > MIN_AREA):
+    if MAX_AREA > cv2.contourArea(c) > MIN_AREA:
         cv2.drawContours(image, [c], 0, (0, 0, 255), 3)
 
         # find, and draw approximate polygon for contour c
@@ -226,9 +226,9 @@ def numeric_mismatch(character):
         character = 'S'
     elif int(character) == 2:
         character = 'Z'
-    elif int(l1) == 1:
+    elif int(character) == 1:
         character = 'I'
-    elif int(l1) == 8:
+    elif int(character) == 8:
         character = 'B'
 
     return character
@@ -244,6 +244,6 @@ def alpha_mismatch(character):
     elif character == 'B':
         character = '8'
     elif character == 'R':
-        n3 = '8'
+        character = '8'
 
     return character

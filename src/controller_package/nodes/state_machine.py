@@ -6,10 +6,6 @@ state_machine.py:
 Main state machine for robot control.
 """
 
-import string
-
-from collections import deque
-
 import rospy
 import cv2
 from sensor_msgs.msg import Image
@@ -55,12 +51,14 @@ PLATE_THREAD_WINDOW = 60
 
 ROAD_IMAGE_SHAPE = (192, 108)
 
+
 class StateMachine:
     """_summary_
     StateMachine: 
 
     Creates a control system for the robot in the ENPH 353 competition.
     """
+
     def __init__(self, timer):
         self.vel_pub = rospy.Publisher("/R1/cmd_vel", Twist, queue_size=1)
         self.bridge = CvBridge()
@@ -104,52 +102,23 @@ class StateMachine:
         self.allow_count = False
         self.plate_thread = threading.Thread()
 
-        self.plate_positions = deque(['2', '3', '4', '5', '6', '1'])
-
         self.reverse_dic = ip.reverse_dictionary()
 
-    def data_image_callback(self, data):
-        self.frame_counter += 1
-        print(self.frame_counter)
-        if self.frame_counter <= self.max_frames:
-            try:
-                cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            except CvBridgeError as e:
-                print(e)
-
-            processed_img = ip.process_image(cv_image)
-            cv_image = ip.crop_camera(cv_image)
-
-            contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-            matrix = None
-            front_approx = None
-
-            if len(contours) > 0:
-                front_approx, _ = ip.get_front_approx(cv_image, contours)
-
-            front_perspective = ip.get_front_perspective(cv_image, front_approx)
-            license_plate, chars, combined_chars, parking_spot = ip.get_plate(front_perspective)
-
-            if not self.in_light:
-                for i, label in enumerate(self.chars_in_view):
-                    # cv2.imwrite(f"/home/fizzer/data/images/test/{label}{self.save_number}.png", chars[i])
-                    cv2.imwrite(f"/home/fizzer/data/images/parking/{label}{self.save_number}.png", parking_spot)
-
-            else:
-                for i, label in enumerate(self.chars_in_view):
-                    cv2.imwrite(f"/home/fizzer/data/images/test/light/{label}{self.save_number}.png", chars[i])
-
-            self.save_number += 1
-        else:
-            print('DONE COLLECTING DATA')
-            rospy.signal_shutdown('Finished collecting data.')
-
     def predict(self, thread_name):
-        predict_0 = self.license_model.predict(np.expand_dims(gray_scale(self.last_plate[0]), axis=0))[0]
-        predict_1 = self.license_model.predict(np.expand_dims(gray_scale(self.last_plate[1]), axis=0))[0]
-        predict_2 = self.license_model.predict(np.expand_dims(gray_scale(self.last_plate[2]), axis=0))[0]
-        predict_3 = self.license_model.predict(np.expand_dims(gray_scale(self.last_plate[3]), axis=0))[0]
+        """
+        predict:
+            takes the current license plate image cached in self and employs neural networks 
+            to identify the characters within the image.
+
+        Effects: sends off the recognized characters to the scoreboard ROS node to register in the competition.
+
+        Args:
+            thread_name (string): A name for the thread that is spawned to process the image.
+        """
+        predict_0 = self.license_model.predict(np.expand_dims(ip.gray_scale(self.last_plate[0]), axis=0))[0]
+        predict_1 = self.license_model.predict(np.expand_dims(ip.gray_scale(self.last_plate[1]), axis=0))[0]
+        predict_2 = self.license_model.predict(np.expand_dims(ip.gray_scale(self.last_plate[2]), axis=0))[0]
+        predict_3 = self.license_model.predict(np.expand_dims(ip.gray_scale(self.last_plate[3]), axis=0))[0]
 
         parking_predict = self.parking_model.predict(np.expand_dims(self.last_parking, axis=0))[0]
 
@@ -158,7 +127,7 @@ class StateMachine:
         i2, = np.where(np.isclose(predict_2, 1.))
         i3, = np.where(np.isclose(predict_3, 1.))
 
-        ip = np.where(np.isclose(parking_predict, 1.))
+        plate_location = np.where(np.isclose(parking_predict, 1.))
 
         l1 = self.reverse_dic[i0[0]]
         l2 = self.reverse_dic[i1[0]]
@@ -179,18 +148,25 @@ class StateMachine:
 
         print(
             f"PREDICT {l1}{l2}{n3}{n4}")
-        print(f"PARKING PREDICT: {ip[0] + 1}")
+        print(f"PARKING PREDICT: {plate_location[0] + 1}")
 
-        self.timer.publish_plate(f'{(ip[0] + 1)[0]}', f'{l1}{l2}{n3}{n4}')
+        self.timer.publish_plate(f'{(plate_location[0] + 1)[0]}', f'{l1}{l2}{n3}{n4}')
         print(f'{thread_name} finished executing.')
 
-        if str((ip[0] + 1)[0]) == '1':
+        if str((plate_location[0] + 1)[0]) == '1':
             self.timer.terminate()
 
         return
 
     def image_callback(self, data):
+        """
+        Image Callback:
+            State Machine for the entire robot. Controls plate recognition, driving, and all functions not 
+            covered by the opening sequence in main_controller.py.
 
+        Args:
+            data (sensor_msgs.msg.Image): ROS image message from the robot's onboard camera.
+        """
         global cv_image
         current_camera_image = np.empty(ROAD_IMAGE_SHAPE)
         try:
