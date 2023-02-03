@@ -5,8 +5,6 @@ Entry point for all robot-controlling code in this project.
 import rospy
 import sys
 import cv2
-from license_identification import license_detector
-
 
 from utils.timer_controller import TimerController
 from utils.direct_controller import DirectController
@@ -17,11 +15,14 @@ def main(args):
     rospy.init_node('main_controller', anonymous=True)
     timer = TimerController()
     dc = DirectController()
+    # Hardcoded Entry Sequence
     dc.drive(0.01, 0.01)
     tc.start()
     dc.drive(0.4, 0.3)
     dc.spin(90)
+    # Start Timer
     sm = StateMachine(timer)
+    # Start Rospy Callbacks
     try:
         rospy.spin()
     except KeyboardInterrupt:
