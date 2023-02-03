@@ -17,13 +17,6 @@
         │   ├── parking_model.h5
         │   └── rm5_modified_10.h5 (driving model)
         ├── <a href="https://github.com/reesecritchlow/ENPH353_Team16/tree/main/src/controller_package/nodes">nodes</a>
-        │   ├── deprecated
-        │   │   ├── data_collection.py
-        │   │   ├── data_controller.py
-        │   │   ├── imitation_controller.py
-        │   │   ├── license_controller.py
-        │   │   ├── license_identification.py
-        │   │   └── pid_controller.py
         │   ├── main_controller.py
         │   ├── state_machine.py
         │   └── utils
